@@ -1,6 +1,10 @@
 # agcom
 New Generation for http://agcom.g0v.it/
 
+beta version
+
+https://g0v-it.github.io/agcom/volume.html
+
 # documentation
 - sito di riferimento
 https://www.agcom.it/pluralismo-politico-sociale-in-televisione
