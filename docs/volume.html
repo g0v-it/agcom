@@ -11,6 +11,7 @@
     <div id="container" style="height: 100%">
         <div id="volume" style="height: 100%"></div>
         <div id='radar' style="height: 100%"></div>
+        <div id='treemap_movimenti' style="height: 100%"></div>
         <div id="logo">
             <img src="https://www.agcom.it/documents/10179/4502194/Logo+Creative+common/2e1fe5a2-4324-4965-b8af-76403bb42b15?t=1618583317352" width="250px" />
             <br /><br />
@@ -42,7 +43,7 @@
 
         option = {
             title: {
-                text: 'Ore di notizie ed interventi dei politici nella televisione',
+                text: 'Ore di notizie ed interventi di politica nella televisione',
             },
             tooltip: {
                 trigger: 'axis',
@@ -3488,6 +3489,762 @@
 
         window.addEventListener('resize', myChartRadar.resize);
     </script>
+    <script type="text/javascript">
+        var dom = document.getElementById('treemap_movimenti');
+        var myChartTreemapMovimenti = echarts.init(dom, null, {
+            renderer: 'canvas',
+            useDirtyRect: false
+        });
+        var app = {};
+
+        var option;
+
+        option = {
+            series: [{
+                type: 'treemap',
+                data: [{
+                    name: "Movimento 5 Stelle",
+                    value: 25002.78
+                }, {
+                    name: "Partito Democratico",
+                    value: 15734.58
+                }, {
+                    name: "Lega Nord",
+                    value: 9565.58
+                }, {
+                    name: "PDL - Forza Italia",
+                    value: 7237.23
+                }, {
+                    name: "Fratelli d\'Italia Centrodestra Nazionale",
+                    value: 3294.9
+                }, {
+                    name: "Italia Viva",
+                    value: 3272.5
+                }, {
+                    name: "Liberi e Uguali",
+                    value: 1848.77
+                }, {
+                    name: "Sardine",
+                    value: 286.1
+                }, {
+                    name: "Forza Nuova",
+                    value: 266.57
+                }, {
+                    name: "Casapound",
+                    value: 222.97
+                }, {
+                    name: "Piero Grasso-Liberi e Uguali",
+                    value: 213.92
+                }, {
+                    name: "+Europa",
+                    value: 144.25
+                }, {
+                    name: "+Europa-Centro Democratico",
+                    value: 117.85
+                }, {
+                    name: "Centro Democratico - Radicali Italiani - +Europa ",
+                    value: 114.77
+                }, {
+                    name: "Partito Radicale Non Violento Transnazionale ",
+                    value: 103.42
+                }, {
+                    name: "Udc",
+                    value: 102.32
+                }, {
+                    name: "CasaPound Italia ? Destre Unite",
+                    value: 87.4
+                }, {
+                    name: "Maie - Movimento Associativo Italiani all'Estero",
+                    value: 85.68
+                }, {
+                    name: "Azione - +Europa Radicali Italiani",
+                    value: 84.2
+                }, {
+                    name: "Radicali Italiani",
+                    value: 84.12
+                }, {
+                    name: "Civica Popolare",
+                    value: 63.15
+                }, {
+                    name: "Governo",
+                    value: 59.27
+                }, {
+                    name: "Noi con l'Italia",
+                    value: 58.37
+                }, {
+                    name: "La Sinistra",
+                    value: 57.07
+                }, {
+                    name: "L'Alternativa c'è!",
+                    value: 53.38
+                }, {
+                    name: "Gruppo Misto",
+                    value: 52.83
+                }, {
+                    name: "Potere al Popolo",
+                    value: 49.63
+                }, {
+                    name: "Per le autonomie-minoranze linguistiche",
+                    value: 40.67
+                }, {
+                    name: "Noi con l\'Italia-Scelta Civica-Maie",
+                    value: 39.52
+                }, {
+                    name: "Europa Verde",
+                    value: 39.15
+                }, {
+                    name: "Partito Comunista",
+                    value: 38.67
+                }, {
+                    name: "Federazione dei Verdi",
+                    value: 38.15
+                }, {
+                    name: "Noi con l'Italia-USEI-Cambiamo!-Alleanza di Centro",
+                    value: 37.87
+                }, {
+                    name: "Insieme per il Futuro",
+                    value: 37.75
+                }, {
+                    name: "+Europa-Italia in Comune-PDE Italia",
+                    value: 36.28
+                }, {
+                    name: "L\'Alternativa",
+                    value: 28.62
+                }, {
+                    name: "Insieme",
+                    value: 24.85
+                }, {
+                    name: "SVP-Sudtiroler Volkspartei",
+                    value: 23.63
+                }, {
+                    name: "Italia Europa Insieme",
+                    value: 23.15
+                }, {
+                    name: "Azione - +Europa - Radicali Italiani ",
+                    value: 22.97
+                }, {
+                    name: "Azione ",
+                    value: 17.15
+                }, {
+                    name: "Noi con l'Italia-USEI-Rinascimento-AdC",
+                    value: 14.27
+                }, {
+                    name: "Coraggio Italia-Idea-Cambiamo!-Europeisti-Noi Di Centro (Noi Campani)",
+                    value: 13.32
+                }, {
+                    name: "Union Valdotaine Progressiste ",
+                    value: 12.92
+                }, {
+                    name: "Europa Verde - Federazione dei Verdi ",
+                    value: 11.65
+                }, {
+                    name: "Democrazia Cristiana ",
+                    value: 11.28
+                }, {
+                    name: "Coraggio Italia - Idea e Cambiamo ",
+                    value: 11.22
+                }, {
+                    name: "Partito Socialista",
+                    value: 11.07
+                }, {
+                    name: "Democrazia Solidale-Centro Democratico",
+                    value: 10.12
+                }, {
+                    name: "10 Volte Meglio",
+                    value: 9.77
+                }, {
+                    name: "Gilet Arancioni",
+                    value: 9.4
+                }, {
+                    name: "Facciamo Eco Federazione dei Verdi",
+                    value: 8.23
+                }, {
+                    name: "Partito Pirata",
+                    value: 7.77
+                }, {
+                    name: "Partito Animalista",
+                    value: 7.72
+                }, {
+                    name: "Popolo della Famiglia ",
+                    value: 7.72
+                }, {
+                    name: "Alleanza Liberal Popolare - Partito Repubblicano Italiano(ALA - PRI)",
+                    value: 7.55
+                }, {
+                    name: "Partito Sardo d\'Azione",
+                    value: 7.25
+                }, {
+                    name: "Cambiamo!-Popolo Protagonista",
+                    value: 7.18
+                }, {
+                    name: "SI-SEL-POS-Liberi e Uguali ",
+                    value: 6.98
+                }, {
+                    name: "Centro Democratico - Italiani In Europa - Europeisti - MAIE ",
+                    value: 6.65
+                }, {
+                    name: "Comitato noiNo ",
+                    value: 6.38
+                }, {
+                    name: "Manifesta, Potere al Popolo, Partito della Rifondazione Comunista - Sinistra Europea ",
+                    value: 6.22
+                }, {
+                    name: "Rifondazione Comunista",
+                    value: 6.02
+                }, {
+                    name: "Italia dei valori",
+                    value: 5.63
+                }, {
+                    name: "Partito Valore Umano ",
+                    value: 5.62
+                }, {
+                    name: "C.A.L.(Costituzione, Ambiente, Lavoro) - Alternativa - P.C. - I.d.V ",
+                    value: 5.58
+                }, {
+                    name: "Europa Verde - Verdi Europei",
+                    value: 5.4
+                }, {
+                    name: "Italia al Centro-Coraggio Italia",
+                    value: 5.38
+                }, {
+                    name: "Popolo della famiglia - Alternativa Popolare",
+                    value: 5.2
+                }, {
+                    name: "L'Italia in comune",
+                    value: 4.92
+                }, {
+                    name: "Sacro Romano Impero Cattolico ",
+                    value: 4.92
+                }, {
+                    name: "Comitato per il No al taglio del Parlamento ",
+                    value: 4.85
+                }, {
+                    name: "Coraggio Italia - Idea e Cambiamo - Europeisti ",
+                    value: 4.77
+                }, {
+                    name: "Civica Popolare - Ap - Psi - Area Civica ",
+                    value: 4.58
+                }, {
+                    name: "Per una Sinistra Rivoluzionaria ",
+                    value: 4.45
+                }, {
+                    name: "GAL Grandi autonomie e libertà ",
+                    value: 4.35
+                }, {
+                    name: "Popolari per l'Italia",
+                    value: 4.25
+                }, {
+                    name: "Viva la Fisica",
+                    value: 4.2
+                }, {
+                    name: "Autonomie per l'Europa",
+                    value: 4.13
+                }, {
+                    name: "Popolo per la Costituzione ",
+                    value: 4.08
+                }, {
+                    name: "Italia agli italiani ",
+                    value: 4.07
+                }, {
+                    name: "Italexit ",
+                    value: 4.05
+                }, {
+                    name: "Mamme nel mondo ",
+                    value: 4.03
+                }, {
+                    name: "Movimento Animalista",
+                    value: 3.92
+                }, {
+                    name: "Team Kollensperger",
+                    value: 3.8
+                }, {
+                    name: "Civici e Innovatori-Energie per l'Italia",
+                    value: 3.73
+                }, {
+                    name: "MAIE-Psi-Facciamo Eco",
+                    value: 3.53
+                }, {
+                    name: "Idea",
+                    value: 3.48
+                }, {
+                    name: "Verità",
+                    value: 3.3
+                }, {
+                    name: "Movimento dei Forconi",
+                    value: 3.2
+                }, {
+                    name: "Partito Internettiano",
+                    value: 3.0
+                }, {
+                    name: "Movimento Poeti d\'azione",
+                    value: 2.85
+                }, {
+                    name: "Azione - +Europa ? Radicali Italiani",
+                    value: 2.67
+                }, {
+                    name: "Articolo 1- Movimento Democratico Progressista",
+                    value: 2.63
+                }, {
+                    name: "Unione Tricolore America Latina",
+                    value: 2.52
+                }, {
+                    name: "Lista del Popolo",
+                    value: 2.35
+                }, {
+                    name: "Beppe Sala - Noi, Milano",
+                    value: 2.35
+                }, {
+                    name: "Partito dei Comunisti Italiani ",
+                    value: 2.32
+                }, {
+                    name: "Lista De Magistris Sindaco per Napoli ",
+                    value: 2.25
+                }, {
+                    name: " Centro Democratico - Italiani in Europa ",
+                    value: 1.92
+                }, {
+                    name: "Unione Monarchica Italiana ",
+                    value: 1.88
+                }, {
+                    name: "Stella Alpina - Valle d'Aosta",
+                    value: 1.88
+                }, {
+                    name: "Cambiamo!",
+                    value: 1.87
+                }, {
+                    name: "Partito Liberale Italiano",
+                    value: 1.85
+                }, {
+                    name: "Libertà",
+                    value: 1.85
+                }, {
+                    name: "Partito delle Buone Maniere",
+                    value: 1.8
+                }, {
+                    name: "Socialisti e Democratici ",
+                    value: 1.63
+                }, {
+                    name: "SMS - Stato moderno e solidale ",
+                    value: 1.6
+                }, {
+                    name: "Movimento tecnico nazionale popolare pace ",
+                    value: 1.52
+                }, {
+                    name: "Movimento Nazionale per la Sovranità ",
+                    value: 1.5
+                }, {
+                    name: "Union Valdôtaine ",
+                    value: 1.45
+                }, {
+                    name: "Lealtà Azione",
+                    value: 1.42
+                }, {
+                    name: "Rinascimento",
+                    value: 1.38
+                }, {
+                    name: "Grande Nord",
+                    value: 1.32
+                }, {
+                    name: "Cambiamo! 10 volte meglio",
+                    value: 1.27
+                }, {
+                    name: "La Catena",
+                    value: 1.27
+                }, {
+                    name: "PPA Movimento Politico Pensiero Azione ",
+                    value: 1.23
+                }, {
+                    name: " Noi con l'Italia-USEI",
+                    value: 1.22
+                }, {
+                    name: "Centro Cristiano Democratico",
+                    value: 1.2
+                }, {
+                    name: "Partito Autonomista Trentino Tirolese-Patt",
+                    value: 1.08
+                }, {
+                    name: "Partito gay LGBT+",
+                    value: 1.08
+                }, {
+                    name: "Centro Democratico",
+                    value: 1.05
+                }, {
+                    name: "Facciamo Eco - Federazione dei Verdi",
+                    value: 1.05
+                }, {
+                    name: "Popolo Viola",
+                    value: 1.0
+                }, {
+                    name: "Civici e Innovatori - Energie per l'Italia",
+                    value: 0.97
+                }, {
+                    name: "Progetto Civico Progressista ",
+                    value: 0.92
+                }, {
+                    name: "Unione Imprenditori Lavoratori Socialisti",
+                    value: 0.9
+                }, {
+                    name: "Liga Veneta ",
+                    value: 0.88
+                }, {
+                    name: "Zaia Presidente",
+                    value: 0.82
+                }, {
+                    name: "Partito Socialista Italiano",
+                    value: 0.78
+                }, {
+                    name: "Movimento Verde è Popolare ",
+                    value: 0.78
+                }, {
+                    name: "Lombardia Progressista ",
+                    value: 0.75
+                }, {
+                    name: "Rivoluzione Cristiana ",
+                    value: 0.75
+                }, {
+                    name: "Comitato per il NO ai referendum sulla giustizia",
+                    value: 0.75
+                }, {
+                    name: "Partito Gay",
+                    value: 0.73
+                }, {
+                    name: "Avanguardia nazionale",
+                    value: 0.73
+                }, {
+                    name: "Nerone Movimento Storico Romano",
+                    value: 0.73
+                }, {
+                    name: "Centro Solidale per Zingaretti ",
+                    value: 0.7
+                }, {
+                    name: "Popolo delle Partite Iva ",
+                    value: 0.67
+                }, {
+                    name: "Alternativa Popolare - Centristi per l'Europa",
+                    value: 0.65
+                }, {
+                    name: "Italia dei Diritti",
+                    value: 0.65
+                }, {
+                    name: "Democrazia Solidale",
+                    value: 0.58
+                }, {
+                    name: "Italia agli Italiani",
+                    value: 0.58
+                }, {
+                    name: "Dieci volte meglio",
+                    value: 0.58
+                }, {
+                    name: "Lista del Grillo",
+                    value: 0.57
+                }, {
+                    name: "Cominciamo dal No",
+                    value: 0.53
+                }, {
+                    name: "Movimento Gente Onesta",
+                    value: 0.53
+                }, {
+                    name: "Movimento Astensionista ",
+                    value: 0.53
+                }, {
+                    name: "Disoccupati - precari - esodati ",
+                    value: 0.52
+                }, {
+                    name: "Volt Italia ",
+                    value: 0.5
+                }, {
+                    name: "Giovani Padani",
+                    value: 0.5
+                }, {
+                    name: "Recupero Maltolto",
+                    value: 0.48
+                }, {
+                    name: "Movimento Meritocrazia Italia",
+                    value: 0.48
+                }, {
+                    name: "Alpe",
+                    value: 0.47
+                }, {
+                    name: "Italia nel cuore",
+                    value: 0.47
+                }, {
+                    name: "Movimento Sociale Italiano",
+                    value: 0.47
+                }, {
+                    name: "Adesso Trieste",
+                    value: 0.43
+                }, {
+                    name: "Diventerà",
+                    value: 0.42
+                }, {
+                    name: "Italia Madre",
+                    value: 0.4
+                }, {
+                    name: "Impegno Civico VdA",
+                    value: 0.4
+                }, {
+                    name: "Alliance Valdotaine",
+                    value: 0.4
+                }, {
+                    name: "Free flights to Italy",
+                    value: 0.38
+                }, {
+                    name: "Partito Liberale Europeo",
+                    value: 0.37
+                }, {
+                    name: "Sicilia Attiva",
+                    value: 0.35
+                }, {
+                    name: "Orgoglio Molise",
+                    value: 0.35
+                }, {
+                    name: "Udeur",
+                    value: 0.35
+                }, {
+                    name: "Buongiorno Livorno",
+                    value: 0.33
+                }, {
+                    name: "PCI",
+                    value: 0.33
+                }, {
+                    name: "Partito Comunista dei Lavoratori",
+                    value: 0.3
+                }, {
+                    name: "No Riforma Forense",
+                    value: 0.3
+                }, {
+                    name: "Noi di Centro",
+                    value: 0.3
+                }, {
+                    name: "Usei Unione Sudamericana Emigrati Italiani",
+                    value: 0.3
+                }, {
+                    name: "Comitato io Dico Sì",
+                    value: 0.3
+                }, {
+                    name: "Noi con Salvini",
+                    value: 0.28
+                }, {
+                    name: "Centristi per l'Europa",
+                    value: 0.27
+                }, {
+                    name: "L'Italia è popolare",
+                    value: 0.27
+                }, {
+                    name: "Il Megafono",
+                    value: 0.27
+                }, {
+                    name: "La Luce del Sud",
+                    value: 0.27
+                }, {
+                    name: "Fiamma Tricolore",
+                    value: 0.27
+                }, {
+                    name: "Morterone Insieme",
+                    value: 0.25
+                }, {
+                    name: "Partito Repubblicano",
+                    value: 0.25
+                }, {
+                    name: "Milano Popolare",
+                    value: 0.25
+                }, {
+                    name: "Partito socialista democratico italiano",
+                    value: 0.23
+                }, {
+                    name: "Progetto Italia",
+                    value: 0.23
+                }, {
+                    name: "Open-Sinistra Fvg",
+                    value: 0.23
+                }, {
+                    name: "Campo Progressista",
+                    value: 0.22
+                }, {
+                    name: "Riconquistare l'Italia - Fronte Sovranista Italiano ",
+                    value: 0.2
+                }, {
+                    name: "Autonomia Responsabile ",
+                    value: 0.2
+                }, {
+                    name: "Movimento Nuova Valle D'Aosta",
+                    value: 0.2
+                }, {
+                    name: "De Luca Presidente",
+                    value: 0.18
+                }, {
+                    name: "Indipendenza Veneta",
+                    value: 0.17
+                }, {
+                    name: "SìToscana a Sinistra ",
+                    value: 0.17
+                }, {
+                    name: "Statuto dei lavoratori art .18 ",
+                    value: 0.17
+                }, {
+                    name: "Tradition et Progrès - Vallée d'Aoste",
+                    value: 0.17
+                }, {
+                    name: "Destre Unite",
+                    value: 0.17
+                }, {
+                    name: "Torino bellissima",
+                    value: 0.15
+                }, {
+                    name: "Pensionati Consumatori",
+                    value: 0.15
+                }, {
+                    name: "Molise 2.0",
+                    value: 0.15
+                }, {
+                    name: "Molise di tutti",
+                    value: 0.15
+                }, {
+                    name: "L\'Italia in crescita",
+                    value: 0.15
+                }, {
+                    name: "Lista Civica Zingaretti",
+                    value: 0.13
+                }, {
+                    name: "Fronte Verde",
+                    value: 0.13
+                }, {
+                    name: "Slovenska Skupnost",
+                    value: 0.13
+                }, {
+                    name: "Progetto Fvg",
+                    value: 0.13
+                }, {
+                    name: "Cambiamo Roma 2021",
+                    value: 0.12
+                }, {
+                    name: "Chiamparino per il Piemonte del sì",
+                    value: 0.12
+                }, {
+                    name: "Partito Pensionati",
+                    value: 0.12
+                }, {
+                    name: "Unione per il Molise ",
+                    value: 0.1
+                }, {
+                    name: "Azione Civile ",
+                    value: 0.1
+                }, {
+                    name: "Comitato Popolare per il No al taglio dei parlamentari ",
+                    value: 0.1
+                }, {
+                    name: "Movimento Giustizia e Uguaglianza Sociale Sordi ",
+                    value: 0.1
+                }, {
+                    name: "Scelta Civica - Maie ",
+                    value: 0.1
+                }, {
+                    name: "Nuova Valle d'Aosta",
+                    value: 0.1
+                }, {
+                    name: "Patto Per l'Autonomia",
+                    value: 0.08
+                }, {
+                    name: "Area Civica",
+                    value: 0.08
+                }, {
+                    name: "Cittadini per Bolzonello",
+                    value: 0.08
+                }, {
+                    name: "Vallée d'Aoste Unie",
+                    value: 0.08
+                }, {
+                    name: "Scirocco",
+                    value: 0.08
+                }, {
+                    name: "Iorio per il Molise",
+                    value: 0.07
+                }, {
+                    name: "L'Italia di Mameli",
+                    value: 0.07
+                }, {
+                    name: "Popolari per l'Italia",
+                    value: 0.07
+                }, {
+                    name: "Sinistra per la Lombardia",
+                    value: 0.07
+                }, {
+                    name: "Partito Popolare italiano",
+                    value: 0.07
+                }, {
+                    name: "Lista Civica con Giorgia",
+                    value: 0.07
+                }, {
+                    name: "Civica Calenda Sindaco ",
+                    value: 0.07
+                }, {
+                    name: "Lista Civica per il Piemonte ",
+                    value: 0.07
+                }, {
+                    name: "La Destra ",
+                    value: 0.07
+                }, {
+                    name: "Fare!",
+                    value: 0.07
+                }, {
+                    name: "L'Altra Europa con Tsipras",
+                    value: 0.05
+                }, {
+                    name: "Comitato Democratici per il Sì",
+                    value: 0.05
+                }, {
+                    name: "Pensionati e invalidi - Giovani insieme",
+                    value: 0.05
+                }, {
+                    name: "Matteo Lepore Sindaco",
+                    value: 0.05
+                }, {
+                    name: "Mpa/Grande Sud",
+                    value: 0.03
+                }, {
+                    name: "Dema Democrazia Autonomia",
+                    value: 0.03
+                }, {
+                    name: "Muv - Movimento universitario valdostano ",
+                    value: 0.03
+                }, {
+                    name: "Patto Civico ",
+                    value: 0.03
+                }, {
+                    name: "Pour l'Autonomie",
+                    value: 0.03
+                }, {
+                    name: "NOstra - Comitato Giovanile per il No al Referendum Costituzionale ",
+                    value: 0.03
+                }, {
+                    name: "BolognaCiPiace ",
+                    value: 0.03
+                }, {
+                    name: "Cristiani Democratici Uniti",
+                    value: 0.03
+                }, {
+                    name: "Unione per il Trentino",
+                    value: 0.02
+                }, {
+                    name: "Unital",
+                    value: 0.02
+                }, {
+                    name: "Anche tu Conti",
+                    value: 0.02
+                }, {
+                    name: "Cristiani per la crescita felice",
+                    value: 0.02
+                }],
+            }]
+        };
+
+        if (option && typeof option === 'object') {
+            myChartTreemapMovimenti.setOption(option);
+        }
+
+        window.addEventListener('resize', myChartTreemapMovimenti.resize);
+    </script>
+
 </body>
 
 </html>
