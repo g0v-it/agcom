@@ -12,6 +12,8 @@
         <div id="volume" style="height: 100%"></div>
         <div id='radar' style="height: 100%"></div>
         <div id='treemap_movimenti' style="height: 100%"></div>
+        <div id='presenza_movimenti' style="height: 100%"></div>
+
         <div id="logo">
             <img src="https://www.agcom.it/documents/10179/4502194/Logo+Creative+common/2e1fe5a2-4324-4965-b8af-76403bb42b15?t=1618583317352" width="250px" />
             <br /><br />
@@ -36,6 +38,79 @@
 
     <script type="text/javascript" src="js/volume_notizie.js"></script>
     <script type="text/javascript" src="js/radar_argomenti.js"></script>
+    <script type="text/javascript">
+        var dom = document.getElementById('presenza_movimenti');
+        var myChartPresenzaMovimenti = echarts.init(dom, null, {
+            renderer: 'canvas',
+            useDirtyRect: false
+        });
+        var optionPresenzaMovimenti;
+        myChartPresenzaMovimenti.showLoading();
+        $.get('/data/presenza_movimenti.json', function(presenzaMovimentiData) {
+            myChartPresenzaMovimenti.hideLoading();
+            optionPresenzaMovimenti = {
+                title: {
+                    text: 'WORLD COFFEE RESEARCH SENSORY LEXICON',
+                    subtext: 'Source: https://worldcoffeeresearch.org/work/sensory-lexicon/',
+                    textStyle: {
+                        fontSize: 14,
+                        align: 'center'
+                    },
+                    subtextStyle: {
+                        align: 'center'
+                    },
+                    sublink: 'https://worldcoffeeresearch.org/work/sensory-lexicon/'
+                },
+                series: {
+                    type: 'sunburst',
+                    data: presenzaMovimentiData.dati,
+                    //radius: [0, '95%'],
+                    //sort: undefined,
+                    //emphasis: {
+                    //    focus: 'ancestor'
+                    //},
+                    /*
+                    levels: [{}, {
+                        r0: '15%',
+                        r: '35%',
+                        itemStyle: {
+                            borderWidth: 2
+                        },
+                        label: {
+                            rotate: 'tangential'
+                        }
+                    }, {
+                        r0: '35%',
+                        r: '70%',
+                        label: {
+                            align: 'right'
+                        }
+                    }, {
+                        r0: '70%',
+                        r: '72%',
+                        label: {
+                            position: 'outside',
+                            padding: 3,
+                            silent: false
+                        },
+                        itemStyle: {
+                            borderWidth: 3
+                        }
+                    }]
+                    */
+                }
+            };
+
+
+            if (optionPresenzaMovimenti && typeof optionPresenzaMovimenti === 'object') {
+                myChartPresenzaMovimenti.setOption(optionPresenzaMovimenti);
+            }
+        });
+
+        window.addEventListener('resize', myChartPresenzaMovimenti.resize);
+    </script>
+
+
     <script type="text/javascript">
         var dom = document.getElementById('treemap_movimenti');
         var myChartTreemapMovimenti = echarts.init(dom, null, {
