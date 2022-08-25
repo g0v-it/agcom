@@ -12,7 +12,8 @@
         <div id="volume" style="height: 100%"></div>
         <div id='radar' style="height: 100%"></div>
         <div id='presenza_movimenti' style="height: 100%"></div>
-        <div id='argomenti_movimenti' style="height: 100%"></div>
+        <div id='interventi_solo_politica' style="height: 100%"></div>
+        <!--<div id='argomenti_movimenti' style="height: 100%"></div>-->
         <div id="logo">
             <img src="https://www.agcom.it/documents/10179/4502194/Logo+Creative+common/2e1fe5a2-4324-4965-b8af-76403bb42b15?t=1618583317352" width="250px" />
             <br /><br />
@@ -40,6 +41,60 @@
     <script type="text/javascript" src="js/volume_notizie.js"></script>
     <script type="text/javascript" src="js/radar_argomenti.js"></script>
     <script type="text/javascript" src="js/presenza_movimenti.js"></script>
+    <script type="text/javascript">
+        var dom = document.getElementById('interventi_solo_politica');
+        var myChart = echarts.init(dom, null, {
+            renderer: 'canvas',
+            useDirtyRect: false
+        });
+        var app = {};
+
+        var option;
+
+        option = {
+            title: {
+                text: 'World Population'
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'shadow'
+                }
+            },
+            legend: {},
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'value',
+                boundaryGap: [0, 0.01]
+            },
+            yAxis: {
+                type: 'category',
+                data: ['Brazil', 'Indonesia', 'USA', 'India', 'China', 'World']
+            },
+            series: [{
+                name: '2011',
+                type: 'bar',
+                data: [18203, 23489, 29034, 104970, 131744, 630230]
+            }, {
+                name: '2012',
+                type: 'bar',
+                data: [19325, 23438, 31000, 121594, 134141, 681807]
+            }]
+        };
+
+        if (option && typeof option === 'object') {
+            myChart.setOption(option);
+        }
+
+        window.addEventListener('resize', myChart.resize);
+    </script>
+
+
 
     <script type="text/javascript">
         var dom = document.getElementById('argomenti_movimenti')
