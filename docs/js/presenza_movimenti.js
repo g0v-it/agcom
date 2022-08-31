@@ -5,7 +5,7 @@ var myChartPresenzaMovimenti = echarts.init(dom, 'walden', {
 });
 var optionPresenzaMovimenti;
 myChartPresenzaMovimenti.showLoading();
-$.get('agcom/data/presenza_movimenti.json', function(presenzaMovimentiData) {
+$.get('data/presenza_movimenti.json', function(presenzaMovimentiData) {
     myChartPresenzaMovimenti.hideLoading();
     optionPresenzaMovimenti = {
         title: {

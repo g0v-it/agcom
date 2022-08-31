@@ -5,7 +5,7 @@ var myChartVolume = echarts.init(dom, 'walden', {
 });
 var optionVolume;
 myChartVolume.showLoading();
-$.get('agcom/data/volume_notizie.json', function(volumeData) {
+$.get('data/volume_notizie.json', function(volumeData) {
     myChartVolume.hideLoading();
     optionVolume = {
         title: {

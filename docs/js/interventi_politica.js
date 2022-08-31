@@ -6,7 +6,7 @@ var myChartSoloPolitica = echarts.init(dom, null, {
 var optionSoloPolitica;
 
 myChartSoloPolitica.showLoading();
-$.get('agcom/data/interventi_solo_politica.json', function(soloPoliticaData) {
+$.get('data/interventi_solo_politica.json', function(soloPoliticaData) {
     myChartSoloPolitica.hideLoading();
     optionSoloPolitica = {
         title: {
