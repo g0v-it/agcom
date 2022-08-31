@@ -54,7 +54,7 @@
         var optionrgomentiSoggetti;
 
         myChartArgomentiSoggetti.showLoading();
-        $.get('agcom//data/argomenti_movimenti.json', function(argomentiMovimentiData) {
+        $.get('data/argomenti_movimenti.json', function(argomentiMovimentiData) {
             myChartArgomentiSoggetti.hideLoading();
             argomentiMovimentiData.data.forEach(function(node) {
                 node.label = {
