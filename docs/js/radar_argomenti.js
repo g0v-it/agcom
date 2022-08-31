@@ -5,7 +5,7 @@ var myChartRadar = echarts.init(dom, 'walden', {
 });
 var optionRadar;
 myChartRadar.showLoading();
-$.get('/data/radar_argomenti.json', function(radarData) {
+$.get('agcom/data/radar_argomenti.json', function(radarData) {
     myChartRadar.hideLoading();
     optionRadar = {
         title: {
