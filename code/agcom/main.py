@@ -130,18 +130,55 @@ async def read_presencecategories(startday: str = from_day, endday: str = to_day
 @app.get("/channels") #,tags=["channels"])
 async def read_channels(startday: str = from_day, endday: str = to_day):
     startday, endday, ndata = getdfinterval(startday, endday, data)
-    channels = list(ndata.channel.unique())
-    return {'channels': channels}
+    senddata_channels = {}
+    senddata_channels['from'] = startday
+    senddata_channels['to'] = endday
+    ndata = ndata.pivot_table(index="channel", columns="category_intervention",
+                              values="minutes_of_intervention", aggfunc=sum).reset_index()
+    ndata = ndata.fillna(0)
+    if "Notizia" in ndata.columns:
+        ndata['Notizia'] = ndata['Notizia'].astype('int')
+    else:
+        ndata['Notizia'] = 0
+    if "Parola" in ndata.columns:
+        ndata['Parola'] = ndata['Parola'].astype('int')
+    else:
+        ndata['Parola'] = 0
+    ndata.rename(columns={'Notizia': 'news', 'Parola': 'speech'}, inplace=True)
+    ndata['total'] = ndata['news'] + ndata['speech']
+
+    senddata_channels['channels'] = ndata.sort_values(["total", "channel"], ascending=[
+        False, True]).to_dict('records')
+
+    return {'data': senddata_channels}
 
 @app.get("/programs")
 async def read_programs(startday: str = from_day, endday: str = to_day):
     programs_data = {}
+    #programs = list(ndata.program.unique())
     startday, endday, ndata = getdfinterval(startday, endday, data)
-    programs = list(ndata.program.unique())
-    programs_data["from"] = startday
+    programs_data['from'] = startday
     programs_data['to'] = endday
-    programs_data['programs'] = programs
-    return {'programs': programs_data}
+    ndata = ndata.pivot_table(index="program", columns="category_intervention",
+                              values="minutes_of_intervention", aggfunc=sum).reset_index()
+    ndata = ndata.fillna(0)
+    if "Notizia" in ndata.columns:
+        ndata['Notizia'] = ndata['Notizia'].astype('int')
+    else:
+        ndata['Notizia'] = 0
+    if "Parola" in ndata.columns:
+        ndata['Parola'] = ndata['Parola'].astype('int')
+    else:
+        ndata['Parola'] = 0
+    ndata.rename(columns={'Notizia': 'news', 'Parola': 'speech'}, inplace=True)
+    ndata['total'] = ndata['news'] + ndata['speech']
+
+    programs_data['programs'] = ndata.sort_values(["total", "program"], ascending=[
+        False, True]).to_dict('records')
+    #programs_data["from"] = startday
+    #programs_data['to'] = endday
+    #programs_data['programs'] = programs
+    return {'data': programs_data}
 
 @app.get("/collectivesubjects")
 async def read_collectivesubjects(startday: str = from_day, endday: str = to_day):
