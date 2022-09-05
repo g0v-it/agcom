@@ -73,24 +73,23 @@ selected_politicians_columns = list(
 def getdfinterval(startday,endday, df):
     if (startday == from_day):
         startday = df.day.min().strftime('%d/%m/%Y')
-    else:
-        startday = datetime.strptime(startday, '%d/%m/%Y')
+
     if (endday == to_day):
         endday = df.day.max().strftime('%d/%m/%Y')
-    else:
-        endday = datetime.strptime(endday, '%d/%m/%Y')
-    print(startday)
-    print(endday)
-    print(df.head(2))
+    
+    startday = datetime.strptime(startday, '%d/%m/%Y')
+    endday = datetime.strptime(endday, '%d/%m/%Y')
+    
     # if (startday > endday):
     #     invday = startday
     #     startday = endday 
     #     endday = invday 
+    
     if (endday == startday):
         df = df[(df.day == startday)]
     else:
         df = df[(df.day >= startday) & (df.day <= endday)]
-    print(df.head(1))
+
     try:
         startday = startday.strftime('%d/%m/%Y')
         endday = endday.strftime('%d/%m/%Y')
