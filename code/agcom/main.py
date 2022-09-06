@@ -36,7 +36,7 @@ app = FastAPI(
     docs_url=None, redoc_url="/",
     title="AGCOM - dati elementari di monitoraggio televisivo",
     description=description,
-    version="0.0.1",
+    version="0.1.0",
     contact={
         "name": "napo",
         "url": "https://twitter.com/napo"
@@ -97,6 +97,12 @@ def getdfinterval(startday,endday, df):
         pass
     return(startday,endday,df)
 
+def changeParolaNotizia(x):
+    if x == "Notizia":
+        x = "news"
+    if x == "Parola":
+        x = "speech"
+    return(x)
 
 def dfpivottable(df, indexvalue, columnsvalue, aggvalues="minutes_of_intervention"):
     rdata = df.pivot_table(index=indexvalue, columns=columnsvalue,values=aggvalues, aggfunc=sum).reset_index()
@@ -155,7 +161,6 @@ async def read_channels(startday: str = from_day, endday: str = to_day):
 @app.get("/programs")
 async def read_programs(startday: str = from_day, endday: str = to_day):
     programs_data = {}
-    #programs = list(ndata.program.unique())
     startday, endday, ndata = getdfinterval(startday, endday, data)
     programs_data['from'] = startday
     programs_data['to'] = endday
@@ -259,9 +264,30 @@ async def read_collectivesubject(name: str, startday: str = from_day, endday: st
         collectivesubject_data['collectivesubject'] = name
         collectivesubject_data['from'] = startday
         collectivesubject_data['to'] = endday
+        collectivesubject.category_intervention = collectivesubject.category_intervention.apply(
+            lambda x: changeParolaNotizia(x))
         raw_data = collectivesubject[selected_politicians_columns].to_dict('records')
         collectivesubject_data['television_presence'] = raw_data
     return {"data": collectivesubject_data}
+
+@app.get("/program/{name}")
+async def program(name: str, startday: str = from_day, endday: str = to_day):
+    name = name.upper()
+    program_data = {}
+    ndata = data[data['program'] == name]
+    channel = data[data.program == name].channel.unique()[0]
+    if ndata.shape[0] > 0:
+        startday, endday, ndata = getdfinterval(startday, endday, ndata)
+        ndata.day = ndata.day.apply(lambda x: x.strftime('%d/%m/%Y'))
+        program_data['program'] = name
+        program_data['channels'] = channel
+        program_data['from'] = startday
+        program_data['to'] = endday
+        ndata.category_intervention = ndata.category_intervention.apply(lambda x: changeParolaNotizia(x))
+        raw_data = ndata.to_dict('records')
+        program_data['program_history'] = raw_data
+    return {"data": program_data}
+
 
 @app.get("/politician/{name_lastname}")
 async def read_politician(name_lastname: str, startday: str = from_day, endday: str = to_day):
@@ -269,7 +295,6 @@ async def read_politician(name_lastname: str, startday: str = from_day, endday: 
     politician_data = {}
     affiliations = "not present"
     politician = data_politicians[data_politicians['name_lastname'] == name_lastname]
-    print(politician.head(3))
     if politician.shape[0] > 0:
         startday, endday, politician = getdfinterval(startday, endday, politician)
         affiliations = list(politician.affiliation.unique())
@@ -278,6 +303,7 @@ async def read_politician(name_lastname: str, startday: str = from_day, endday: 
         politician_data['affiliations'] = affiliations
         politician_data['from'] = startday
         politician_data['to'] = endday
+        politician.category_intervention = politician.category_intervention.apply(lambda x: changeParolaNotizia(x))
         raw_data = politician[selected_politicians_columns].to_dict('records')
         politician_data['television_presence'] = raw_data
     return {"data": politician_data}
