@@ -12,8 +12,8 @@ to_day = data.DATA.max().strftime('%d/%m/%Y')
 data.rename(columns={'CANALE': 'channel', 'PROGRAMMA': 'program', 'DATA':'day', 
                      'COGNOME':'lastname','NOME':'name',
                      'MICRO_CATEGORIA':'affiliation',
-                     'ARGOMENTO': 'topic', 'DURATA': 'minutes_of_intervention',
-                     'TIPO_TEMPO':'category_intervention'}, inplace=True)
+                     'ARGOMENTO': 'topic', 'DURATA': 'minutes_of_information',
+                     'TIPO_TEMPO':'category_information'}, inplace=True)
 
 description = """
 ## AGCOM - elementary data of the italian television monitoring
@@ -104,7 +104,18 @@ def changeParolaNotizia(x):
         x = "speech"
     return(x)
 
-def dfpivottable(df, indexvalue, columnsvalue, aggvalues="minutes_of_intervention"):
+def checkParolaNotizia(df):
+    if "news" in df.columns:
+        df['news'] = df['news'].astype('int')
+    else:
+        df['news'] = 0
+    if "speech" in df.columns:
+        df['speech'] = df['speech'].astype('int')
+    else:
+        df['speech'] = 0
+    return(df)
+
+def dfpivottable(df, indexvalue, columnsvalue, aggvalues="minutes_of_information"):
     rdata = df.pivot_table(index=indexvalue, columns=columnsvalue,values=aggvalues, aggfunc=sum).reset_index()
     rdata = rdata.fillna(0)
     if "Notizia" in rdata.columns:
@@ -130,7 +141,7 @@ async def read_period():
 @app.get("/presencecategories") #, tags=["presencecategories"])
 async def read_presencecategories(startday: str = from_day, endday: str = to_day):
     startday, endday, ndata = getdfinterval(startday, endday, data)
-    presencecategories = list(ndata.category_intervention.unique())
+    presencecategories = list(ndata.category_information.unique())
     return {'presencecategories': presencecategories}
 
 @app.get("/channels") #,tags=["channels"])
@@ -139,8 +150,8 @@ async def read_channels(startday: str = from_day, endday: str = to_day):
     senddata_channels = {}
     senddata_channels['from'] = startday
     senddata_channels['to'] = endday
-    ndata = ndata.pivot_table(index="channel", columns="category_intervention",
-                              values="minutes_of_intervention", aggfunc=sum).reset_index()
+    ndata = ndata.pivot_table(index="channel", columns="category_information",
+                              values="minutes_of_information", aggfunc=sum).reset_index()
     ndata = ndata.fillna(0)
     if "Notizia" in ndata.columns:
         ndata['Notizia'] = ndata['Notizia'].astype('int')
@@ -164,8 +175,8 @@ async def read_programs(startday: str = from_day, endday: str = to_day):
     startday, endday, ndata = getdfinterval(startday, endday, data)
     programs_data['from'] = startday
     programs_data['to'] = endday
-    ndata = ndata.pivot_table(index="program", columns="category_intervention",
-                              values="minutes_of_intervention", aggfunc=sum).reset_index()
+    ndata = ndata.pivot_table(index="program", columns="category_information",
+                              values="minutes_of_information", aggfunc=sum).reset_index()
     ndata = ndata.fillna(0)
     if "Notizia" in ndata.columns:
         ndata['Notizia'] = ndata['Notizia'].astype('int')
@@ -192,8 +203,8 @@ async def read_collectivesubjects(startday: str = from_day, endday: str = to_day
     senddata_collective_subjects = {}
     senddata_collective_subjects['from'] = startday
     senddata_collective_subjects['to'] = endday
-    ndata = ndata.pivot_table(index="lastname", columns="category_intervention",
-                              values="minutes_of_intervention", aggfunc=sum).reset_index()
+    ndata = ndata.pivot_table(index="lastname", columns="category_information",
+                              values="minutes_of_information", aggfunc=sum).reset_index()
     ndata = ndata.fillna(0)
     if "Notizia" in ndata.columns:
         ndata['Notizia'] = ndata['Notizia'].astype('int')
@@ -226,8 +237,8 @@ async def read_politicians(startday: str = from_day, endday: str = to_day):
     senddata_politicians['from'] = startday
     senddata_politicians['to'] = endday
     
-    ndata = ndata.pivot_table(index="name_lastname", columns="category_intervention",
-                      values="minutes_of_intervention", aggfunc=sum).reset_index()
+    ndata = ndata.pivot_table(index="name_lastname", columns="category_information",
+                      values="minutes_of_information", aggfunc=sum).reset_index()
     ndata = ndata.fillna(0)
     if "Notizia" in ndata.columns:
         ndata['Notizia'] = ndata['Notizia'].astype('int')
@@ -264,7 +275,7 @@ async def read_collectivesubject(name: str, startday: str = from_day, endday: st
         collectivesubject_data['collectivesubject'] = name
         collectivesubject_data['from'] = startday
         collectivesubject_data['to'] = endday
-        collectivesubject.category_intervention = collectivesubject.category_intervention.apply(
+        collectivesubject.category_information = collectivesubject.category_information.apply(
             lambda x: changeParolaNotizia(x))
         raw_data = collectivesubject[selected_politicians_columns].to_dict('records')
         collectivesubject_data['television_presence'] = raw_data
@@ -283,7 +294,7 @@ async def program(name: str, startday: str = from_day, endday: str = to_day):
         program_data['channels'] = channel
         program_data['from'] = startday
         program_data['to'] = endday
-        ndata.category_intervention = ndata.category_intervention.apply(lambda x: changeParolaNotizia(x))
+        ndata.category_information = ndata.category_information.apply(lambda x: changeParolaNotizia(x))
         raw_data = ndata.to_dict('records')
         program_data['program_history'] = raw_data
     return {"data": program_data}
@@ -303,10 +314,55 @@ async def read_politician(name_lastname: str, startday: str = from_day, endday: 
         politician_data['affiliations'] = affiliations
         politician_data['from'] = startday
         politician_data['to'] = endday
-        politician.category_intervention = politician.category_intervention.apply(lambda x: changeParolaNotizia(x))
+        politician.category_information = politician.category_information.apply(lambda x: changeParolaNotizia(x))
         raw_data = politician[selected_politicians_columns].to_dict('records')
         politician_data['television_presence'] = raw_data
     return {"data": politician_data}
+
+
+@app.get("/program/{name}/stats")
+async def program(name: str, startday: str = from_day, endday: str = to_day):
+    name = name.upper()
+    program_data = {}
+    ndata = data[data['program'] == name]
+    channel = data[data.program == name].channel.unique()[0]
+    daily_minutes_average = round(ndata.minutes_of_information.sum() / ndata.shape[0], 2)
+
+    if ndata.shape[0] > 0:
+        startday, endday, ndata = getdfinterval(startday, endday, ndata)
+        ndata.day = ndata.day.apply(lambda x: x.strftime('%d/%m/%Y'))
+        program_data['program'] = name
+        program_data['channels'] = channel
+        program_data['from'] = startday
+        program_data['to'] = endday
+        daily_minutes_average = round(
+            ndata.minutes_of_information.sum() / ndata.shape[0], 2)
+        program_data['daily_minutes_average'] = daily_minutes_average
+        program_data['total_days'] = ndata.shape[0]
+        ndata.category_information = ndata.category_information.apply(
+            lambda x: changeParolaNotizia(x))
+        tmi = ndata.groupby(by="category_information")['minutes_of_information'].sum().to_frame().T
+        tmi = checkParolaNotizia(tmi)
+        tmi['total'] = tmi['news'] + tmi['speech']
+        program_data['category_information'] = tmi.to_dict('records')[0]
+        ndata_collective_subjects = ndata[ndata.name == "Soggetto Collettivo"]
+        ndata_politicians = ndata[ndata.name != "Soggettivo Collettivo"]
+        ndata_politicians = ndata_politicians[ndata_politicians.name !=
+                                        "Soggetto Collettivo"]
+        ndata_politicians['name_lastname'] = ndata_politicians['name'] + \
+            " " + ndata_politicians['lastname']
+        program_data['politician_minutes'] = []
+        program_data['collective_subjects_minutes'] = []
+        if ndata_politicians.shape[0] > 0:
+            tmp = ndata_politicians.groupby(by="name_lastname")[
+                'minutes_of_information'].sum().to_frame().sort_values(by="minutes_of_information", ascending=False).T
+            program_data['politician_minutes'] = tmp.to_dict('records')[0]
+        if ndata_collective_subjects.shape[0]:
+            tms = ndata_collective_subjects.groupby(by="lastname")[
+                'minutes_of_information'].sum().to_frame().sort_values(by="minutes_of_information", ascending=False).T
+            program_data['collective_subjects_minutes'] = tms.to_dict('records')[0]
+            
+    return {"data": program_data}
 
 
 @app.get("/collectivesubject/{name}/stats")
@@ -322,19 +378,19 @@ async def read_collectivesubject_stats(name: str, startday: str = from_day, endd
     if collectivesubject.shape[0] > 0:
         startday, endday, collectivesubject = getdfinterval(
             startday, endday, collectivesubject)
-        presence = int(collectivesubject.minutes_of_intervention.sum())
+        presence = int(collectivesubject.minutes_of_information.sum())
         time_topics = collectivesubject.groupby('topic').aggregate('sum')
         time_topics.rename(
-            columns={"minutes_of_intervention": "time_topics"}, inplace=True)
+            columns={"minutes_of_information": "time_topics"}, inplace=True)
         time_topics = time_topics.to_dict()['time_topics']
         time_channels = collectivesubject.groupby('channel').aggregate('sum')
         time_channels.rename(
-            columns={"minutes_of_intervention": "time_channel"}, inplace=True)
+            columns={"minutes_of_information": "time_channel"}, inplace=True)
         time_channels = time_channels.sort_values(by=["time_channel", "channel"], ascending=[
                                                   False, False]).to_dict()['time_channel']
         time_programs = collectivesubject.groupby('program').aggregate('sum')
         time_programs.rename(
-            columns={"minutes_of_intervention": "time_programs"}, inplace=True)
+            columns={"minutes_of_information": "time_programs"}, inplace=True)
         time_programs = time_programs.sort_values(by=["time_programs", "program"], ascending=[
                                                   False, False]).to_dict()['time_programs']
     stats = {}
@@ -365,21 +421,21 @@ async def read_politician_stats(name_lastname: str, startday: str = from_day, en
         affiliations = list(politician.affiliation.unique())
         presencedata = dfpivottable(politician, 
                                     indexvalue="name_lastname", 
-                                    columnsvalue="category_intervention")
+                                    columnsvalue="category_information")
         del presencedata['name_lastname']
         presence = presencedata.to_dict('records')[0]
         time_topics = politician.groupby('topic').aggregate('sum')
-        time_topics.rename(columns={"minutes_of_intervention": "time_topics"}, inplace=True)
+        time_topics.rename(columns={"minutes_of_information": "time_topics"}, inplace=True)
         time_topics = time_topics.to_dict()['time_topics']
         #time_topics = timetopicsdata.to_dict('records')
         time_channels = politician.groupby('channel').aggregate('sum')
         time_channels.rename(
-            columns={"minutes_of_intervention": "time_channel"}, inplace=True)
+            columns={"minutes_of_information": "time_channel"}, inplace=True)
         time_channels = time_channels.sort_values(by=["time_channel", "channel"], ascending=[
                                                   False, False]).to_dict()['time_channel']
         time_programs = politician.groupby('program').aggregate('sum')
         time_programs.rename(
-            columns={"minutes_of_intervention": "time_programs"}, inplace=True)
+            columns={"minutes_of_information": "time_programs"}, inplace=True)
         time_programs = time_programs.sort_values(by=["time_programs", "program"], ascending=[False, False]).to_dict()['time_programs']
         #time_programs = time_programs.to_dict()['time_programs']
 
