@@ -36,7 +36,7 @@ app = FastAPI(
     docs_url=None, redoc_url="/",
     title="AGCOM - dati elementari di monitoraggio televisivo",
     description=description,
-    version="0.1.0",
+    version="0.2.0",
     contact={
         "name": "napo",
         "url": "https://twitter.com/napo"
@@ -191,9 +191,7 @@ async def read_programs(startday: str = from_day, endday: str = to_day):
 
     programs_data['programs'] = ndata.sort_values(["total", "program"], ascending=[
         False, True]).to_dict('records')
-    #programs_data["from"] = startday
-    #programs_data['to'] = endday
-    #programs_data['programs'] = programs
+
     return {'data': programs_data}
 
 @app.get("/collectivesubjects")
@@ -300,6 +298,26 @@ async def program(name: str, startday: str = from_day, endday: str = to_day):
     return {"data": program_data}
 
 
+@app.get("/channel/{name}")
+async def channel(name: str, startday: str = from_day, endday: str = to_day):
+    name = name.title()
+    channel_data = {}
+    ndata = data[data['channel'] == name]
+    programs = list(ndata.program.unique())
+    if ndata.shape[0] > 0:
+        startday, endday, ndata = getdfinterval(startday, endday, ndata)
+        ndata.day = ndata.day.apply(lambda x: x.strftime('%d/%m/%Y'))
+        channel_data['channel'] = name
+        channel_data['programs'] = programs
+        channel_data['from'] = startday
+        channel_data['to'] = endday
+        ndata.category_information = ndata.category_information.apply(
+            lambda x: changeParolaNotizia(x))
+        raw_data = ndata.to_dict('records')
+        channel_data['channel_history'] = raw_data
+    return {"data": channel_data}
+
+
 @app.get("/politician/{name_lastname}")
 async def read_politician(name_lastname: str, startday: str = from_day, endday: str = to_day):
     name_lastname = name_lastname.title()
@@ -365,6 +383,54 @@ async def program(name: str, startday: str = from_day, endday: str = to_day):
     return {"data": program_data}
 
 
+@app.get("/channel/{name}/stats")
+async def channel(name: str, startday: str = from_day, endday: str = to_day):
+    name = name.title()
+    channel_data = {}
+    ndata = data[data['channel'] == name]
+    programs = list(ndata.program.unique())
+    daily_minutes_average = round(
+        ndata.minutes_of_information.sum() / ndata.shape[0], 2)
+
+    if ndata.shape[0] > 0:
+        startday, endday, ndata = getdfinterval(startday, endday, ndata)
+        ndata.day = ndata.day.apply(lambda x: x.strftime('%d/%m/%Y'))
+        channel_data['channel'] = name
+        channel_data['programs'] = programs
+        channel_data['from'] = startday
+        channel_data['to'] = endday
+        daily_minutes_average = round(
+            ndata.minutes_of_information.sum() / ndata.shape[0], 2)
+        channel_data['daily_minutes_average'] = daily_minutes_average
+        channel_data['total_days'] = ndata.shape[0]
+        ndata.category_information = ndata.category_information.apply(
+            lambda x: changeParolaNotizia(x))
+        tmi = ndata.groupby(by="category_information")[
+            'minutes_of_information'].sum().to_frame().T
+        tmi = checkParolaNotizia(tmi)
+        tmi['total'] = tmi['news'] + tmi['speech']
+        channel_data['category_information'] = tmi.to_dict('records')[0]
+        ndata_collective_subjects = ndata[ndata.name == "Soggetto Collettivo"]
+        ndata_politicians = ndata[ndata.name != "Soggettivo Collettivo"]
+        ndata_politicians = ndata_politicians[ndata_politicians.name !=
+                                              "Soggetto Collettivo"]
+        ndata_politicians['name_lastname'] = ndata_politicians['name'] + \
+            " " + ndata_politicians['lastname']
+        channel_data['politician_minutes'] = []
+        channel_data['collective_subjects_minutes'] = []
+        if ndata_politicians.shape[0] > 0:
+            tmp = ndata_politicians.groupby(by="name_lastname")[
+                'minutes_of_information'].sum().to_frame().sort_values(by="minutes_of_information", ascending=False).T
+            channel_data['politician_minutes'] = tmp.to_dict('records')[0]
+        if ndata_collective_subjects.shape[0]:
+            tms = ndata_collective_subjects.groupby(by="lastname")[
+                'minutes_of_information'].sum().to_frame().sort_values(by="minutes_of_information", ascending=False).T
+            channel_data['collective_subjects_minutes'] = tms.to_dict('records')[
+                0]
+
+    return {"data": channel_data}
+
+
 @app.get("/collectivesubject/{name}/stats")
 async def read_collectivesubject_stats(name: str, startday: str = from_day, endday: str = to_day):
     name = name.title()
@@ -427,7 +493,6 @@ async def read_politician_stats(name_lastname: str, startday: str = from_day, en
         time_topics = politician.groupby('topic').aggregate('sum')
         time_topics.rename(columns={"minutes_of_information": "time_topics"}, inplace=True)
         time_topics = time_topics.to_dict()['time_topics']
-        #time_topics = timetopicsdata.to_dict('records')
         time_channels = politician.groupby('channel').aggregate('sum')
         time_channels.rename(
             columns={"minutes_of_information": "time_channel"}, inplace=True)
@@ -437,7 +502,6 @@ async def read_politician_stats(name_lastname: str, startday: str = from_day, en
         time_programs.rename(
             columns={"minutes_of_information": "time_programs"}, inplace=True)
         time_programs = time_programs.sort_values(by=["time_programs", "program"], ascending=[False, False]).to_dict()['time_programs']
-        #time_programs = time_programs.to_dict()['time_programs']
 
     stats = {}
     stats['politician'] = name_lastname
