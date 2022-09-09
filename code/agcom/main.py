@@ -36,7 +36,7 @@ app = FastAPI(
     docs_url=None, redoc_url="/",
     title="AGCOM - dati elementari di monitoraggio televisivo",
     description=description,
-    version="0.2.0",
+    version="0.2.1",
     contact={
         "name": "napo",
         "url": "https://twitter.com/napo"
@@ -264,7 +264,7 @@ async def read_affiliations(startday: str = from_day, endday: str = to_day):
 async def read_collectivesubject(name: str, startday: str = from_day, endday: str = to_day):
     name = name.title()
     collectivesubject_data = {}
-    collectivesubject = data_collective_subjects[data_collective_subjects['lastname'] == name]
+    collectivesubject = data_collective_subjects[data_collective_subjects['lastname'].str.title() == name]
     if collectivesubject.shape[0] > 0:
         startday, endday, collectivesubject = getdfinterval(
             startday, endday, collectivesubject)
@@ -283,7 +283,7 @@ async def read_collectivesubject(name: str, startday: str = from_day, endday: st
 async def program(name: str, startday: str = from_day, endday: str = to_day):
     name = name.upper()
     program_data = {}
-    ndata = data[data['program'] == name]
+    ndata = data[data['program'].str.upper() == name]
     channel = data[data.program == name].channel.unique()[0]
     if ndata.shape[0] > 0:
         startday, endday, ndata = getdfinterval(startday, endday, ndata)
@@ -302,7 +302,7 @@ async def program(name: str, startday: str = from_day, endday: str = to_day):
 async def channel(name: str, startday: str = from_day, endday: str = to_day):
     name = name.title()
     channel_data = {}
-    ndata = data[data['channel'] == name]
+    ndata = data[data['channel'].str.title() == name]
     programs = list(ndata.program.unique())
     if ndata.shape[0] > 0:
         startday, endday, ndata = getdfinterval(startday, endday, ndata)
@@ -323,7 +323,7 @@ async def read_politician(name_lastname: str, startday: str = from_day, endday: 
     name_lastname = name_lastname.title()
     politician_data = {}
     affiliations = "not present"
-    politician = data_politicians[data_politicians['name_lastname'] == name_lastname]
+    politician = data_politicians[data_politicians['name_lastname'].str.title() == name_lastname]
     if politician.shape[0] > 0:
         startday, endday, politician = getdfinterval(startday, endday, politician)
         affiliations = list(politician.affiliation.unique())
@@ -342,7 +342,7 @@ async def read_politician(name_lastname: str, startday: str = from_day, endday: 
 async def program(name: str, startday: str = from_day, endday: str = to_day):
     name = name.upper()
     program_data = {}
-    ndata = data[data['program'] == name]
+    ndata = data[data['program'].str.upper() == name]
     channel = data[data.program == name].channel.unique()[0]
     daily_minutes_average = round(ndata.minutes_of_information.sum() / ndata.shape[0], 2)
 
@@ -387,7 +387,7 @@ async def program(name: str, startday: str = from_day, endday: str = to_day):
 async def channel(name: str, startday: str = from_day, endday: str = to_day):
     name = name.title()
     channel_data = {}
-    ndata = data[data['channel'] == name]
+    ndata = data[data['channel'].str.title() == name]
     programs = list(ndata.program.unique())
     daily_minutes_average = round(
         ndata.minutes_of_information.sum() / ndata.shape[0], 2)
@@ -439,7 +439,8 @@ async def read_collectivesubject_stats(name: str, startday: str = from_day, endd
     time_channels = ""
     time_topics = ""
     time_programs = ""
-    collectivesubject = data_collective_subjects[data_collective_subjects['lastname'] == name]
+    collectivesubject = data_collective_subjects[data_collective_subjects['lastname'].str.title(
+    ) == name]
 
     if collectivesubject.shape[0] > 0:
         startday, endday, collectivesubject = getdfinterval(
@@ -478,7 +479,7 @@ async def read_politician_stats(name_lastname: str, startday: str = from_day, en
     time_channels = ""
     time_topics = ""
     time_programs = ""
-    politician = data_politicians[data_politicians['name_lastname']
+    politician = data_politicians[data_politicians['name_lastname'].str.title()
                                   == name_lastname]
     
     if politician.shape[0] > 0:
