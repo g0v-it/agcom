@@ -36,7 +36,7 @@ app = FastAPI(
     docs_url=None, redoc_url="/",
     title="AGCOM - dati elementari di monitoraggio televisivo",
     description=description,
-    version="0.2.1",
+    version="0.3.5",
     contact={
         "name": "napo",
         "url": "https://twitter.com/napo"
@@ -260,6 +260,25 @@ async def read_affiliations(startday: str = from_day, endday: str = to_day):
     return {'affiliations': affiliations}
 
 
+@app.get("/topic/{name}")
+async def topic(name: str, startday: str = from_day, endday: str = to_day):
+    name = name.title()
+    topic_data = {}
+    ndata = data[data['topic'].str.title() == name]
+    if ndata.shape[0] > 0:
+        startday, endday, ndata = getdfinterval(startday, endday, ndata)
+        ndata.day = ndata.day.apply(lambda x: x.strftime('%d/%m/%Y'))
+        topic_data['topic'] = name
+        #topic_data['channels'] = channel
+        topic_data['from'] = startday
+        topic_data['to'] = endday
+        ndata.category_information = ndata.category_information.apply(
+            lambda x: changeParolaNotizia(x))
+        raw_data = ndata.to_dict('records')
+        topic_data['topic_history'] = raw_data
+    return {"data": topic_data}
+
+
 @app.get("/collectivesubject/{name}")
 async def read_collectivesubject(name: str, startday: str = from_day, endday: str = to_day):
     name = name.title()
@@ -339,7 +358,7 @@ async def read_politician(name_lastname: str, startday: str = from_day, endday: 
 
 
 @app.get("/program/{name}/stats")
-async def program(name: str, startday: str = from_day, endday: str = to_day):
+async def program_stats(name: str, startday: str = from_day, endday: str = to_day):
     name = name.upper()
     program_data = {}
     ndata = data[data['program'].str.upper() == name]
@@ -383,18 +402,67 @@ async def program(name: str, startday: str = from_day, endday: str = to_day):
     return {"data": program_data}
 
 
-@app.get("/channel/{name}/stats")
-async def channel(name: str, startday: str = from_day, endday: str = to_day):
+@app.get("/topic/{name}/stats")
+async def topic_stats(name: str, startday: str = from_day, endday: str = to_day):
     name = name.title()
-    channel_data = {}
-    ndata = data[data['channel'].str.title() == name]
-    programs = list(ndata.program.unique())
+    topic_data = {}
+    ndata = data[data['topic'].str.title() == name]
     daily_minutes_average = round(
         ndata.minutes_of_information.sum() / ndata.shape[0], 2)
 
     if ndata.shape[0] > 0:
         startday, endday, ndata = getdfinterval(startday, endday, ndata)
         ndata.day = ndata.day.apply(lambda x: x.strftime('%d/%m/%Y'))
+        topic_data['topic'] = name
+        topic_data['from'] = startday
+        topic_data['to'] = endday
+        daily_minutes_average = round(
+            ndata.minutes_of_information.sum() / ndata.shape[0], 2)
+        topic_data['daily_minutes_average'] = daily_minutes_average
+        topic_data['total_days'] = ndata.shape[0]
+        ndata.category_information = ndata.category_information.apply(
+            lambda x: changeParolaNotizia(x))
+        tmi = ndata.groupby(by="category_information")[
+            'minutes_of_information'].sum().to_frame().T
+        tmi = checkParolaNotizia(tmi)
+        tmi['total'] = tmi['news'] + tmi['speech']
+        topic_data['category_information'] = tmi.to_dict('records')[0]
+        ndata_collective_subjects = ndata[ndata.name == "Soggetto Collettivo"]
+        ndata_politicians = ndata[ndata.name != "Soggettivo Collettivo"]
+        ndata_politicians = ndata_politicians[ndata_politicians.name !=
+                                              "Soggetto Collettivo"]
+        ndata_politicians['name_lastname'] = ndata_politicians['name'] + \
+            " " + ndata_politicians['lastname']
+        topic_data['politician_minutes'] = []
+        topic_data['collective_subjects_minutes'] = []
+        topic_data['channels'] = ndata[ndata.topic == 'Sport'].groupby(by="channel")[
+            'minutes_of_information'].sum().to_frame().sort_values(by="minutes_of_information", ascending=False).T.to_dict('records')[0]
+        topic_data['programs'] = ndata[ndata.topic == 'Sport'].groupby(by="program")[
+            'minutes_of_information'].sum().to_frame().sort_values(by="minutes_of_information", ascending=False).T.to_dict('records')[0]
+        if ndata_politicians.shape[0] > 0:
+            tmp = ndata_politicians.groupby(by="name_lastname")[
+                'minutes_of_information'].sum().to_frame().sort_values(by="minutes_of_information", ascending=False).T
+            topic_data['politician_minutes'] = tmp.to_dict('records')[0]
+        if ndata_collective_subjects.shape[0]:
+            tms = ndata_collective_subjects.groupby(by="lastname")[
+                'minutes_of_information'].sum().to_frame().sort_values(by="minutes_of_information", ascending=False).T
+            topic_data['collective_subjects_minutes'] = tms.to_dict('records')[
+                0]
+
+    return {"data": topic_data}
+
+@app.get("/channel/{name}/stats")
+async def channel_stats(name: str, startday: str = from_day, endday: str = to_day):
+    name = name.title()
+    channel_data = {}
+    ndata = data[data['channel'].str.title() == name]
+    daily_minutes_average = round(
+        ndata.minutes_of_information.sum() / ndata.shape[0], 2)
+
+    if ndata.shape[0] > 0:
+        startday, endday, ndata = getdfinterval(startday, endday, ndata)
+        ndata.day = ndata.day.apply(lambda x: x.strftime('%d/%m/%Y'))
+        programs = list(ndata.program.unique())
         channel_data['channel'] = name
         channel_data['programs'] = programs
         channel_data['from'] = startday
@@ -471,7 +539,7 @@ async def read_collectivesubject_stats(name: str, startday: str = from_day, endd
     return {"data": stats}
 
 @app.get("/politician/{name_lastname}/stats")
-async def read_politician_stats(name_lastname: str, startday: str = from_day, endday: str = to_day):
+async def politician_stats(name_lastname: str, startday: str = from_day, endday: str = to_day):
     name_lastname = name_lastname.title()
     affiliations = "not present"
     presence = ""
