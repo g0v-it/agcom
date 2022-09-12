@@ -413,7 +413,7 @@ async def topic_stats(name: str, startday: str = from_day, endday: str = to_day)
     if ndata.shape[0] > 0:
         startday, endday, ndata = getdfinterval(startday, endday, ndata)
         ndata.day = ndata.day.apply(lambda x: x.strftime('%d/%m/%Y'))
-        topic_data['topic'] = name
+        topic_data['topic'] = name.title()
         topic_data['from'] = startday
         topic_data['to'] = endday
         daily_minutes_average = round(
@@ -435,9 +435,9 @@ async def topic_stats(name: str, startday: str = from_day, endday: str = to_day)
             " " + ndata_politicians['lastname']
         topic_data['politician_minutes'] = []
         topic_data['collective_subjects_minutes'] = []
-        topic_data['channels'] = ndata[ndata.topic == 'Sport'].groupby(by="channel")[
+        topic_data['channels'] = ndata[ndata.topic.str.title() == name].groupby(by="channel")[
             'minutes_of_information'].sum().to_frame().sort_values(by="minutes_of_information", ascending=False).T.to_dict('records')[0]
-        topic_data['programs'] = ndata[ndata.topic == 'Sport'].groupby(by="program")[
+        topic_data['programs'] = ndata[ndata.topic.str.title() == name].groupby(by="program")[
             'minutes_of_information'].sum().to_frame().sort_values(by="minutes_of_information", ascending=False).T.to_dict('records')[0]
         if ndata_politicians.shape[0] > 0:
             tmp = ndata_politicians.groupby(by="name_lastname")[
