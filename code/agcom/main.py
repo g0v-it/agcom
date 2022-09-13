@@ -1,11 +1,18 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 import pandas as pd
-#import os
+import os
 from datetime import datetime
 pd.options.mode.chained_assignment = None  # default='warn'
-
-data = pd.read_parquet(
-    "https://github.com/g0v-it/agcom/raw/main/data/dati_presenze_politici.parquet")
+data_file = "dati_presenze_politici.parquet"
+data_file_url = "https://github.com/g0v-it/agcom/raw/main/data/"
+data = None
+localstorage = False
+if os.path.exists(data_file):
+    data = pd.read_parquet(data_file)
+    localstorage = True
+else:
+    data = pd.read_parquet(data_file_url + data_file)
+    
 from_day = data.DATA.min().strftime('%d/%m/%Y')
 to_day = data.DATA.max().strftime('%d/%m/%Y')
 
@@ -36,12 +43,19 @@ app = FastAPI(
     docs_url=None, redoc_url="/",
     title="AGCOM - dati elementari di monitoraggio televisivo",
     description=description,
-    version="0.3.5",
+    version="0.4.0",
     contact={
         "name": "napo",
         "url": "https://twitter.com/napo"
-    }
+    }, 
+    license_info={
+        "name": "data under cc-by-nc-sa",
+        "url": "https://creativecommons.org/licenses/by-nc-sa/4.0/"
+    },
 )
+
+   
+
 
 tags_metadata = [
     {
@@ -130,6 +144,11 @@ def dfpivottable(df, indexvalue, columnsvalue, aggvalues="minutes_of_information
     rdata['total'] = rdata['news'] + rdata['speech']
     return(rdata)
 
+@app.get("/status")
+async def get_status():
+    message = {}
+    message['local_storage'] = localstorage
+    return {"message":message}
 
 @app.get("/period") #, tags=["period"])
 async def read_period():
@@ -139,7 +158,7 @@ async def read_period():
     return {"period": period}
 
 @app.get("/presencecategories") #, tags=["presencecategories"])
-async def read_presencecategories(startday: str = from_day, endday: str = to_day):
+async def read_presencecategories(startday: str | None = Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: str | None = Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
     startday, endday, ndata = getdfinterval(startday, endday, data)
     senddata = {}
     senddata['from'] = startday
@@ -148,7 +167,7 @@ async def read_presencecategories(startday: str = from_day, endday: str = to_day
     return {'presencecategories': senddata}
 
 @app.get("/channels") #,tags=["channels"])
-async def read_channels(startday: str = from_day, endday: str = to_day):
+async def read_channels(startday: str | None = Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: str | None = Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
     startday, endday, ndata = getdfinterval(startday, endday, data)
     senddata_channels = {}
     senddata_channels['from'] = startday
@@ -173,7 +192,7 @@ async def read_channels(startday: str = from_day, endday: str = to_day):
     return {'data': senddata_channels}
 
 @app.get("/programs")
-async def read_programs(startday: str = from_day, endday: str = to_day):
+async def read_programs(startday: str | None = Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: str | None = Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
     programs_data = {}
     startday, endday, ndata = getdfinterval(startday, endday, data)
     programs_data['from'] = startday
@@ -198,7 +217,7 @@ async def read_programs(startday: str = from_day, endday: str = to_day):
     return {'data': programs_data}
 
 @app.get("/collectivesubjects")
-async def read_collectivesubjects(startday: str = from_day, endday: str = to_day):
+async def read_collectivesubjects(startday: str | None = Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: str | None = Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
     startday, endday, ndata = getdfinterval(
         startday, endday, data_collective_subjects)
     senddata_collective_subjects = {}
@@ -224,14 +243,17 @@ async def read_collectivesubjects(startday: str = from_day, endday: str = to_day
     return {'data': senddata_collective_subjects}
 
 @app.get("/topics")
-async def read_topics(startday: str = from_day, endday: str = to_day):
+async def read_topics(startday: str | None = Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: str | None = Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
     startday, endday, ndata = getdfinterval(
         startday, endday, data)
-    list_topics = list(ndata.topic.unique())
-    return {'topics': list_topics}
+    senddata = {}
+    senddata['from'] = startday
+    senddata['to'] = endday
+    senddata['topics'] = list(ndata.topic.unique())
+    return {'data': senddata}
 
 @app.get("/politicians")
-async def read_politicians(startday: str = from_day, endday: str = to_day):
+async def read_politicians(startday: str | None = Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: str | None = Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
     startday, endday, ndata = getdfinterval(
         startday, endday, data_politicians)
     senddata_politicians = {}
@@ -257,7 +279,7 @@ async def read_politicians(startday: str = from_day, endday: str = to_day):
 
 
 @app.get("/politicians/list")
-async def politicians_list(startday: str = from_day, endday: str = to_day):
+async def politicians_list(startday: str | None = Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: str | None = Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
     startday, endday, ndata = getdfinterval(
         startday, endday, data_politicians)
     ndata = ndata.sort_values(["lastname","name"])
@@ -269,7 +291,7 @@ async def politicians_list(startday: str = from_day, endday: str = to_day):
 
 
 @app.get("/affiliations")
-async def read_affiliations(startday: str = from_day, endday: str = to_day):
+async def read_affiliations(startday: str | None = Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: str | None = Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
     startday, endday, ndata = getdfinterval(
         startday, endday, data)
     senddata = {}
@@ -280,7 +302,7 @@ async def read_affiliations(startday: str = from_day, endday: str = to_day):
 
 
 @app.get("/topic/{name}")
-async def topic(name: str, startday: str = from_day, endday: str = to_day):
+async def topic(name: str, startday: str | None=Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: str | None=Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
     name = name.title()
     topic_data = {}
     ndata = data[data['topic'].str.title() == name]
@@ -299,7 +321,7 @@ async def topic(name: str, startday: str = from_day, endday: str = to_day):
 
 
 @app.get("/collectivesubject/{name}")
-async def read_collectivesubject(name: str, startday: str = from_day, endday: str = to_day):
+async def read_collectivesubject(name: str, startday: str | None=Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: str | None=Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
     name = name.title()
     collectivesubject_data = {}
     collectivesubject = data_collective_subjects[data_collective_subjects['lastname'].str.title() == name]
@@ -318,7 +340,7 @@ async def read_collectivesubject(name: str, startday: str = from_day, endday: st
     return {"data": collectivesubject_data}
 
 @app.get("/program/{name}")
-async def program(name: str, startday: str = from_day, endday: str = to_day):
+async def program(name: str, startday: str | None=Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: str | None=Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
     name = name.upper()
     program_data = {}
     ndata = data[data['program'].str.upper() == name]
@@ -337,7 +359,7 @@ async def program(name: str, startday: str = from_day, endday: str = to_day):
 
 
 @app.get("/channel/{name}")
-async def channel(name: str, startday: str = from_day, endday: str = to_day):
+async def channel(name: str, startday: str | None=Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: str | None=Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
     name = name.title()
     channel_data = {}
     ndata = data[data['channel'].str.title() == name]
@@ -357,7 +379,7 @@ async def channel(name: str, startday: str = from_day, endday: str = to_day):
 
 
 @app.get("/politician/{name_lastname}")
-async def read_politician(name_lastname: str, startday: str = from_day, endday: str = to_day):
+async def read_politician(name_lastname: str, startday: str | None=Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: str | None=Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
     name_lastname = name_lastname.title()
     politician_data = {}
     affiliations = "not present"
@@ -377,7 +399,7 @@ async def read_politician(name_lastname: str, startday: str = from_day, endday: 
 
 
 @app.get("/program/{name}/stats")
-async def program_stats(name: str, startday: str = from_day, endday: str = to_day):
+async def program_stats(name: str, startday: str | None=Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: str | None=Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
     name = name.upper()
     program_data = {}
     ndata = data[data['program'].str.upper() == name]
@@ -422,7 +444,7 @@ async def program_stats(name: str, startday: str = from_day, endday: str = to_da
 
 
 @app.get("/topic/{name}/stats")
-async def topic_stats(name: str, startday: str = from_day, endday: str = to_day):
+async def topic_stats(name: str, startday: str | None=Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: str | None=Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
     name = name.title()
     topic_data = {}
     ndata = data[data['topic'].str.title() == name]
@@ -471,7 +493,7 @@ async def topic_stats(name: str, startday: str = from_day, endday: str = to_day)
     return {"data": topic_data}
 
 @app.get("/channel/{name}/stats")
-async def channel_stats(name: str, startday: str = from_day, endday: str = to_day):
+async def channel_stats(name: str, startday: str | None=Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: str | None=Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
     name = name.title()
     channel_data = {}
     ndata = data[data['channel'].str.title() == name]
@@ -519,7 +541,7 @@ async def channel_stats(name: str, startday: str = from_day, endday: str = to_da
 
 
 @app.get("/collectivesubject/{name}/stats")
-async def read_collectivesubject_stats(name: str, startday: str = from_day, endday: str = to_day):
+async def read_collectivesubject_stats(name: str, startday: str | None=Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: str | None=Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
     name = name.title()
     presence = ""
     time_topics = ""
@@ -558,7 +580,7 @@ async def read_collectivesubject_stats(name: str, startday: str = from_day, endd
     return {"data": stats}
 
 @app.get("/politician/{name_lastname}/stats")
-async def politician_stats(name_lastname: str, startday: str = from_day, endday: str = to_day):
+async def politician_stats(name_lastname: str, startday: str | None=Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: str | None=Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
     name_lastname = name_lastname.title()
     affiliations = "not present"
     presence = ""
