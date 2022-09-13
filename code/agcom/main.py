@@ -141,8 +141,11 @@ async def read_period():
 @app.get("/presencecategories") #, tags=["presencecategories"])
 async def read_presencecategories(startday: str = from_day, endday: str = to_day):
     startday, endday, ndata = getdfinterval(startday, endday, data)
-    presencecategories = list(ndata.category_information.unique())
-    return {'presencecategories': presencecategories}
+    senddata = {}
+    senddata['from'] = startday
+    senddata['to'] = endday
+    senddata['presencecategories'] = list(ndata.category_information.unique())
+    return {'presencecategories': senddata}
 
 @app.get("/channels") #,tags=["channels"])
 async def read_channels(startday: str = from_day, endday: str = to_day):
@@ -252,12 +255,28 @@ async def read_politicians(startday: str = from_day, endday: str = to_day):
                                          False, True]).to_dict('records')
     return {"data": senddata_politicians}
 
+
+@app.get("/politicians/list")
+async def politicians_list(startday: str = from_day, endday: str = to_day):
+    startday, endday, ndata = getdfinterval(
+        startday, endday, data_politicians)
+    ndata = ndata.sort_values(["lastname","name"])
+    senddata = {}
+    senddata['from'] = startday
+    senddata['to'] = endday
+    senddata['politicians'] = list(ndata.name_lastname.unique())
+    return {"data": senddata}
+
+
 @app.get("/affiliations")
 async def read_affiliations(startday: str = from_day, endday: str = to_day):
     startday, endday, ndata = getdfinterval(
         startday, endday, data)
-    affiliations = list(ndata.affiliation.unique())
-    return {'affiliations': affiliations}
+    senddata = {}
+    senddata['from'] = startday
+    senddata['to'] = endday
+    senddata['affiliations'] = list(ndata.affiliation.unique())
+    return {'data': senddata}
 
 
 @app.get("/topic/{name}")
