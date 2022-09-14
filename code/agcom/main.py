@@ -8,11 +8,11 @@ data_file = "dati_presenze_politici.parquet"
 data_file_url = "https://github.com/g0v-it/agcom/raw/main/data/"
 data = None
 localstorage = False
-#if os.path.exists(data_file):
-#    data = pd.read_parquet(data_file)
-#    localstorage = True
-#else:
-data = pd.read_parquet(data_file_url + data_file)
+if os.path.exists(data_file):
+    data = pd.read_parquet(data_file)
+    localstorage = True
+else:
+    data = pd.read_parquet(data_file_url + data_file)
     
 from_day = data.DATA.min().strftime('%d/%m/%Y')
 to_day = data.DATA.max().strftime('%d/%m/%Y')
@@ -38,6 +38,12 @@ The license under which the data is released by AGCOM is CC-BY-SA-NC
 
 ![](https://www.agcom.it/documents/10179/4502194/Logo+Creative+common/2e1fe5a2-4324-4965-b8af-76403bb42b15?t=1618583317352)
 
+
+A project of [Copernicani Association](https://copernicani.it) and [napo](https://twitter.com/napo)
+<br/> 
+<br/>
+<img src="https://copernicani.it/wp-content/uploads/2020/10/logo-in-bianco.png" width="250px">
+
 """ % (from_day, to_day)
 
 app = FastAPI(
@@ -56,16 +62,10 @@ app = FastAPI(
 )
 
    
-
-
 tags_metadata = [
     {
         "name": "period",
         "description": "returns the historical period that can be queried on the data",
-    },
-    {
-        "name": "presencecategories",
-        "description": "the interventions are collected in different categories.<br/>Eg. 'Parola' => speeches<Br/>'Notizia' = > when the person or collective subject made news"
     },
     {
         "name": "channels",
@@ -157,15 +157,6 @@ async def read_period():
     period['from'] = from_day
     period['to'] = to_day
     return {"period": period}
-
-@app.get("/presencecategories") #, tags=["presencecategories"])
-async def read_presencecategories(startday: Union[str, None] = Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: Union[str, None] = Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
-    startday, endday, ndata = getdfinterval(startday, endday, data)
-    senddata = {}
-    senddata['from'] = startday
-    senddata['to'] = endday
-    senddata['presencecategories'] = list(ndata.category_information.unique())
-    return {'presencecategories': senddata}
 
 @app.get("/channels") #,tags=["channels"])
 async def read_channels(startday: Union[str, None] = Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: Union[str, None] = Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
