@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Path, Query
 import pandas as pd
 import os
 from typing import Union
@@ -13,7 +13,9 @@ if os.path.exists(data_file):
     localstorage = True
 else:
     data = pd.read_parquet(data_file_url + data_file)
-    
+
+checkitaliandate = '(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'
+checkcategoryinformation = '^(speech|both|news)$'
 from_day = data.DATA.min().strftime('%d/%m/%Y')
 to_day = data.DATA.max().strftime('%d/%m/%Y')
 
@@ -50,7 +52,7 @@ app = FastAPI(
     docs_url="/", redoc_url=None,
     title="AGCOM - dati elementari di monitoraggio televisivo",
     description=description,
-    version="0.5.5",
+    version="0.6.0",
     contact={
         "name": "napo",
         "url": "https://twitter.com/napo"
@@ -134,8 +136,9 @@ def dfpivottable(df, indexvalue, columnsvalue, aggvalues="minutes_of_information
     rdata['total'] = rdata['news'] + rdata['speech']
     return(rdata)
 
+
 @app.get("/status")
-async def status():
+async def get():
     """
     Return information about the data storage
     """
@@ -144,7 +147,7 @@ async def status():
     return {"message":message}
 
 @app.get("/period") #, tags=["period"])
-async def period():
+async def get():
     """
     returns information on the time window of the available data<br/>
     The time unit is the day (format DD/MM/YYYY)
@@ -155,13 +158,19 @@ async def period():
     return {"period": period}
 
 @app.get("/politicians")
-async def politicians(startday: Union[str, None] = Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: Union[str, None] = Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
-    startday, endday, ndata = getdfinterval(
-        startday, endday, data_politicians)
+async def get(startday: Union[str, None] = Query(default=from_day, description="start day of the time window", min_length=10, max_length=10, regex=checkitaliandate), endday: Union[str, None] = Query(default=to_day, description="end day of the time window", min_length=10, max_length=10, regex=checkitaliandate), filter: Union[str, None] = Query(default='both', regex=checkcategoryinformation)):
     """
     returns the list of the politicians with information on the minutes of "speech" and "news" in a given time window<br/>
     The time unit is the day (format DD/MM/YYYY)   
     """
+    ndata = data_politicians
+    if filter == 'speech':
+        ndata = data_politicians[data_politicians.category_information == 'Parola']
+    if filter == 'news':
+        ndata = data_politicians[data_politicians.category_information == 'Notizia']
+
+    startday, endday, ndata=getdfinterval(startday, endday, ndata)
+
     senddata_politicians = {}
     senddata_politicians['from'] = startday
     senddata_politicians['to'] = endday
@@ -185,13 +194,21 @@ async def politicians(startday: Union[str, None] = Query(default=from_day, min_l
 
 
 @app.get("/politicians/list")
-async def politicians_list(startday: Union[str, None] = Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: Union[str, None] = Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
-    startday, endday, ndata = getdfinterval(
-        startday, endday, data_politicians)
+async def get(startday: Union[str, None] = Query(default=from_day, description="start day of the time window", min_length=10, max_length=10, regex=checkitaliandate), 
+              endday: Union[str, None]=Query(default=to_day, description="end day of the time window", min_length=10, max_length=10, regex=checkitaliandate),
+            filter: Union[str, None] = Query(default='both', regex=checkcategoryinformation)):
     """
     returns the list of the politicians in a given time window<br/>
     The time unit is the day (format DD/MM/YYYY)    
     """
+    ndata = data_politicians
+    if filter == 'speech':
+        ndata = data_politicians[data_politicians.category_information == 'Parola']
+    if filter == 'news':
+        ndata = data_politicians[data_politicians.category_information == 'Notizia']
+
+    startday, endday, ndata=getdfinterval(
+        startday, endday, ndata)
     ndata = ndata.sort_values(["lastname", "name"])
     senddata = {}
     senddata['from'] = startday
@@ -200,15 +217,24 @@ async def politicians_list(startday: Union[str, None] = Query(default=from_day, 
     return {"data": senddata}
 
 @app.get("/politician/{name_lastname}")
-async def politician(name_lastname: str, startday: Union[str, None] = Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: Union[str, None] = Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
+async def get(name_lastname: str = Path(description="name and lastname of the politician"), 
+              startday: Union[str, None] = Query(default=from_day, description="start day of the time window", min_length=10, max_length=10, regex=checkitaliandate), 
+              endday: Union[str, None]=Query(default=to_day, description="end day of the time window", min_length=10, max_length=10, regex=checkitaliandate),
+                filter: Union[str, None] = Query(default='both', regex=checkcategoryinformation)):
     """
     returns all the data of a single politician in a given time window<br/>
     The time unit is the day (format DD/MM/YYYY)  
     """
+    ndata = data_politicians
+    if filter == 'speech':
+        ndata = data_politicians[data_politicians.category_information == 'Parola']
+    if filter == 'news':
+        ndata = data_politicians[data_politicians.category_information == 'Notizia']
+
     name_lastname = name_lastname.title()
     politician_data = {}
     affiliations = "not present"
-    politician = data_politicians[data_politicians['name_lastname'].str.title(
+    politician = ndata[ndata['name_lastname'].str.title(
     ) == name_lastname]
     if politician.shape[0] > 0:
         startday, endday, politician = getdfinterval(
@@ -227,7 +253,10 @@ async def politician(name_lastname: str, startday: Union[str, None] = Query(defa
 
 
 @app.get("/politician/{name_lastname}/stats")
-async def politician_stats(name_lastname: str, startday: Union[str, None] = Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: Union[str, None] = Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
+async def get(name_lastname: str = Path(description="name and lastname of the politician"), 
+              startday: Union[str, None] = Query(default=from_day, description="start day of the time window", min_length=10, max_length=10, regex=checkitaliandate), 
+              endday: Union[str, None]=Query(default=to_day, description="end day of the time window", min_length=10, max_length=10, regex=checkitaliandate),
+            filter: Union[str, None] = Query(default='both', regex=checkcategoryinformation)):
     """
     returns statical data of a single politician in a given time window<br/>
     The time unit is the day (format DD/MM/YYYY)<br/><br/>
@@ -242,6 +271,12 @@ async def politician_stats(name_lastname: str, startday: Union[str, None] = Quer
     - distribution of minutes by television channel
     - distribution of minutes for television programs
     """
+    ndata = data_politicians
+    if filter == 'speech':
+        ndata = data_politicians[data_politicians.category_information == 'Parola']
+    if filter == 'news':
+        ndata = data_politicians[data_politicians.category_information == 'Notizia']
+
     name_lastname = name_lastname.title()
     affiliations = "not present"
     presence = ""
@@ -249,7 +284,7 @@ async def politician_stats(name_lastname: str, startday: Union[str, None] = Quer
     time_channels = ""
     time_topics = ""
     time_programs = ""
-    politician = data_politicians[data_politicians['name_lastname'].str.title()
+    politician = ndata[ndata['name_lastname'].str.title()
                                   == name_lastname]
 
     if politician.shape[0] > 0:
@@ -294,12 +329,20 @@ async def politician_stats(name_lastname: str, startday: Union[str, None] = Quer
 
 
 @app.get("/affiliations")
-async def affiliations(startday: Union[str, None] = Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: Union[str, None] = Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
+async def get(startday: Union[str, None] = Query(default=from_day, description="start day of the time window", min_length=10, max_length=10, regex=checkitaliandate), 
+              endday: Union[str, None] = Query(default=to_day, description="end day of the time window", min_length=10, max_length=10, regex=checkitaliandate),
+              filter: Union[str, None] = Query(default='both', regex=checkcategoryinformation)):
     """
     returns the list of the affiliations of each politician in a given time window<br/>
     The time unit is the day (format DD/MM/YYYY)
     """
-    startday, endday, ndata = getdfinterval(startday, endday, data)
+    ndata = data
+    if filter == 'speech':
+        ndata = data[data.category_information == 'Parola']
+    if filter == 'news':
+        ndata = data[data.category_information == 'Notizia']
+
+    startday, endday, ndata = getdfinterval(startday, endday, ndata)
     senddata = {}
     senddata['from'] = startday
     senddata['to'] = endday
@@ -307,13 +350,19 @@ async def affiliations(startday: Union[str, None] = Query(default=from_day, min_
     return {'data': senddata}
 
 @app.get("/collectivesubjects")
-async def collectivesubjects(startday: Union[str, None] = Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: Union[str, None] = Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
+async def get(startday: Union[str, None] = Query(default=from_day, description="start day of the time window", min_length=10, max_length=10, regex=checkitaliandate), endday: Union[str, None] = Query(default=to_day, description="end day of the time window", min_length=10, max_length=10, regex=checkitaliandate), 
+              filter: Union[str, None] = Query(default='both', regex=checkcategoryinformation)):
     """
     returns the list of the collective subjects with information on the minutes of "speech" and "news" in a given time window<br/>
     The time unit is the day (format DD/MM/YYYY)   
     """
+    ndata = data_collective_subjects
+    if filter == 'speech':
+        ndata = ndata[ndata.category_information == 'Parola']
+    if filter == 'news':
+        ndata = ndata[ndata.category_information == 'Notizia']
     startday, endday, ndata = getdfinterval(
-        startday, endday, data_collective_subjects)
+        startday, endday, ndata)
     senddata_collective_subjects = {}
     senddata_collective_subjects['from'] = startday
     senddata_collective_subjects['to'] = endday
@@ -338,13 +387,19 @@ async def collectivesubjects(startday: Union[str, None] = Query(default=from_day
 
 
 @app.get("/collectivesubjects/list")
-async def collectivesubjects_list(startday: Union[str, None] = Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: Union[str, None] = Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
+async def get(startday: Union[str, None] = Query(default=from_day, description="start day of the time window", min_length=10, max_length=10, regex=checkitaliandate), endday: Union[str, None] = Query(default=to_day, description="end day of the time window", min_length=10, max_length=10, regex=checkitaliandate), filter: Union[str, None] = Query(default='both', regex=checkcategoryinformation)):
     """
     returns the list of the collective political subjects in a given time window<br/>
     The time unit is the day (format DD/MM/YYYY)    
     """
+    ndata = data_collective_subjects
+    if filter == 'speech':
+        ndata = ndata[ndata.category_information == 'Parola']
+    if filter == 'news':
+        ndata = ndata[ndata.category_information == 'Notizia']    
     startday, endday, ndata = getdfinterval(
         startday, endday, data_collective_subjects)
+    
     ndata = ndata.sort_values(["lastname"])
     senddata = {}
     senddata['from'] = startday
@@ -354,14 +409,21 @@ async def collectivesubjects_list(startday: Union[str, None] = Query(default=fro
     return {'data': senddata}
 
 @app.get("/collectivesubject/{name}")
-async def collectivesubject(name: str, startday: Union[str, None]=Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: Union[str, None]=Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
+async def get(name: str = Path(description="name of the political collective subject"), startday: Union[str, None] = Query(default=from_day, description="start day of the time window", min_length=10, max_length=10, regex=checkitaliandate), endday: Union[str, None] = Query(default=to_day, description="end day of the time window", min_length=10, max_length=10, regex=checkitaliandate), filter: Union[str, None] = Query(default='both', regex=checkcategoryinformation)):
     """
     returns all the data of a collective political subject in a given time window<br/>
     The time unit is the day (format DD/MM/YYYY)  
     """
+    ndata = data_collective_subjects
+    if filter == 'speech':
+        ndata = ndata[ndata.category_information == 'Parola']
+    if filter == 'news':
+        ndata = ndata[ndata.category_information == 'Notizia']
+        
     name = name.title()
     collectivesubject_data = {}
-    collectivesubject = data_collective_subjects[data_collective_subjects['lastname'].str.title() == name]
+    collectivesubject = ndata[ndata['lastname'].str.title(
+    ) == name]
     if collectivesubject.shape[0] > 0:
         startday, endday, collectivesubject = getdfinterval(
             startday, endday, collectivesubject)
@@ -377,7 +439,7 @@ async def collectivesubject(name: str, startday: Union[str, None]=Query(default=
     return {"data": collectivesubject_data}
 
 @app.get("/collectivesubject/{name}/stats")
-async def collectivesubject_stats(name: str, startday: Union[str, None]=Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: Union[str, None]=Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
+async def get(name: str = Path(description="name of the political collective subject"), startday: Union[str, None] = Query(default=from_day, description="start day of the time window", min_length=10, max_length=10, regex=checkitaliandate), endday: Union[str, None] = Query(default=to_day, description="end day of the time window", min_length=10, max_length=10, regex=checkitaliandate),filter: Union[str, None] = Query(default='both', regex=checkcategoryinformation)):
     """
     returns statical data of a collective political subject in a given time window<br/>
     The time unit is the day (format DD/MM/YYYY)<br/><br/>
@@ -388,13 +450,19 @@ async def collectivesubject_stats(name: str, startday: Union[str, None]=Query(de
     - distribution of minutes by television channel
     - distribution of minutes for television programs
     """
+    ndata = data_collective_subjects
+    if filter == 'speech':
+        ndata = ndata[ndata.category_information == 'Parola']
+    if filter == 'news':
+        ndata = ndata[ndata.category_information == 'Notizia']
     name = name.title()
+    
     presence = ""
     time_topics = ""
     time_channels = ""
     time_topics = ""
     time_programs = ""
-    collectivesubject = data_collective_subjects[data_collective_subjects['lastname'].str.title(
+    collectivesubject = ndata[ndata['lastname'].str.title(
     ) == name]
 
     if collectivesubject.shape[0] > 0:
@@ -426,13 +494,20 @@ async def collectivesubject_stats(name: str, startday: Union[str, None]=Query(de
     return {"data": stats}
 
 @app.get("/topics")
-async def read_topics(startday: Union[str, None] = Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: Union[str, None] = Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
+async def get(startday: Union[str, None] = Query(default=from_day, description="start day of the time window", min_length=10, max_length=10, regex=checkitaliandate), endday: Union[str, None] = Query(default=to_day, description="end day of the time window", min_length=10, max_length=10, regex=checkitaliandate), filter: Union[str, None] = Query(default='both', regex=checkcategoryinformation)):
     """
     returns the list of the topics in a given time window<br/>
     The time unit is the day (format DD/MM/YYYY)   
     """
+    ndata = data
+    if filter == 'speech':
+        ndata = ndata[ndata.category_information == 'Parola']
+    if filter == 'news':
+        ndata = ndata[ndata.category_information == 'Notizia']
+    name = name.title()
     startday, endday, ndata = getdfinterval(
-        startday, endday, data)
+        startday, endday, ndata)
+    
     senddata = {}
     senddata['from'] = startday
     senddata['to'] = endday
@@ -440,14 +515,22 @@ async def read_topics(startday: Union[str, None] = Query(default=from_day, min_l
     return {'data': senddata}
 
 @app.get("/topic/{name}")
-async def topic(name: str, startday: Union[str, None] = Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: Union[str, None] = Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
+async def get(name: str = Path(description="name of the topic"), startday: Union[str, None] = Query(default=from_day, description="start day of the time window", min_length=10, max_length=10, regex=checkitaliandate), endday: Union[str, None] = Query(default=to_day, description="end day of the time window", min_length=10, max_length=10, regex=checkitaliandate), filter: Union[str, None] = Query(default='both', regex=checkcategoryinformation)):
     """
     returns all the data of a topic in a given time window<br/>
     The time unit is the day (format DD/MM/YYYY)  
     """
+    ndata = data
+    if filter == 'speech':
+        ndata = ndata[ndata.category_information == 'Parola']
+    if filter == 'news':
+        ndata = ndata[ndata.category_information == 'Notizia']
+    name = name.title()
+    startday, endday, ndata = getdfinterval(
+        startday, endday, ndata)
     name = name.title()
     topic_data = {}
-    ndata = data[data['topic'].str.title() == name]
+    ndata = ndata[ndata['topic'].str.title() == name]
     if ndata.shape[0] > 0:
         startday, endday, ndata = getdfinterval(startday, endday, ndata)
         ndata.day = ndata.day.apply(lambda x: x.strftime('%d/%m/%Y'))
@@ -462,7 +545,7 @@ async def topic(name: str, startday: Union[str, None] = Query(default=from_day, 
     return {"data": topic_data}
 
 @app.get("/topic/{name}/stats")
-async def topic_stats(name: str, startday: Union[str, None]=Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: Union[str, None]=Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
+async def get(name: str = Path(description="name of the topic"), startday: Union[str, None] = Query(default=from_day, description="start day of the time window", min_length=10, max_length=10, regex=checkitaliandate), endday: Union[str, None] = Query(default=to_day, description="end day of the time window", min_length=10, max_length=10, regex=checkitaliandate), filter: Union[str, None] = Query(default='both', regex=checkcategoryinformation)):
     """
     returns statical data of a topic in a given time window<br/>
     The time unit is the day (format DD/MM/YYYY)<br/><br/>
@@ -476,9 +559,17 @@ async def topic_stats(name: str, startday: Union[str, None]=Query(default=from_d
     - the minutes for each italian television channel
     - the minutes for each italian television program
     """
+    ndata = data
+    if filter == 'speech':
+        ndata = ndata[ndata.category_information == 'Parola']
+    if filter == 'news':
+        ndata = ndata[ndata.category_information == 'Notizia']
+    name = name.title()
+    startday, endday, ndata = getdfinterval(
+        startday, endday, ndata)
     name = name.title()
     topic_data = {}
-    ndata = data[data['topic'].str.title() == name]
+    ndata = ndata[ndata['topic'].str.title() == name]
     daily_minutes_average = round(
         ndata.minutes_of_information.sum() / ndata.shape[0], 2)
 
@@ -524,13 +615,18 @@ async def topic_stats(name: str, startday: Union[str, None]=Query(default=from_d
     return {"data": topic_data}
 
 @app.get("/programs")
-async def read_programs(startday: Union[str, None] = Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: Union[str, None] = Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
+async def get(startday: Union[str, None] = Query(default=from_day, description="start day of the time window", min_length=10, max_length=10, regex=checkitaliandate), endday: Union[str, None] = Query(default=to_day, description="end day of the time window", min_length=10, max_length=10, regex=checkitaliandate), filter: Union[str, None] = Query(default='both', regex=checkcategoryinformation)):
     """
     returns the list of the italian television **programs** available on a given time window<br/>
     The format of the date is DD/MM/YYYY
     """
+    ndata = data
+    if filter == 'speech':
+        ndata = ndata[ndata.category_information == 'Parola']
+    if filter == 'news':
+        ndata = ndata[ndata.category_information == 'Notizia']
     programs_data = {}
-    startday, endday, ndata = getdfinterval(startday, endday, data)
+    startday, endday, ndata = getdfinterval(startday, endday, ndata)
     programs_data['from'] = startday
     programs_data['to'] = endday
     ndata = ndata.pivot_table(index="program", columns="category_information",
@@ -554,15 +650,23 @@ async def read_programs(startday: Union[str, None] = Query(default=from_day, min
 
 
 @app.get("/program/{name}")
-async def program(name: str, startday: Union[str, None]=Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: Union[str, None]=Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
+async def get(name: str = Path(description="name of the italian program"), startday: Union[str, None] = Query(default=from_day, description="start day of the time window", min_length=10, max_length=10, regex=checkitaliandate), endday: Union[str, None] = Query(default=to_day, description="end day of the time window", min_length=10, max_length=10, regex=checkitaliandate), filter: Union[str, None] = Query(default='both', regex=checkcategoryinformation)):
     """
     returns the list of the italian television **programs** available on a given time window<br/>
     The format of the date is DD/MM/YYYY
     """
+    ndata = data
+    if filter == 'speech':
+        ndata = ndata[ndata.category_information == 'Parola']
+    if filter == 'news':
+        ndata = ndata[ndata.category_information == 'Notizia']
+    name = name.title()
+    startday, endday, ndata = getdfinterval(
+        startday, endday, ndata)
     name = name.upper()
     program_data = {}
-    ndata = data[data['program'].str.upper() == name]
-    channel = data[data.program == name].channel.unique()[0]
+    ndata = ndata[ndata['program'].str.upper() == name]
+    channel = ndata[ndata.program == name].channel.unique()[0]
     if ndata.shape[0] > 0:
         startday, endday, ndata = getdfinterval(startday, endday, ndata)
         ndata.day = ndata.day.apply(lambda x: x.strftime('%d/%m/%Y'))
@@ -576,11 +680,16 @@ async def program(name: str, startday: Union[str, None]=Query(default=from_day, 
     return {"data": program_data}
 
 @app.get("/program/{name}/stats")
-async def program_stats(name: str, startday: Union[str, None]=Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: Union[str, None]=Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
+async def get(name: str = Path(description="name of the italian program"), startday: Union[str, None] = Query(default=from_day, description="start day of the time window", min_length=10, max_length=10, regex=checkitaliandate), endday: Union[str, None] = Query(default=to_day, description="end day of the time window", min_length=10, max_length=10, regex=checkitaliandate), filter: Union[str, None] = Query(default='both', regex=checkcategoryinformation)):
     name = name.upper()
     program_data = {}
-    ndata = data[data['program'].str.upper() == name]
-    channel = data[data.program == name].channel.unique()[0]
+    ndata = data
+    if filter == 'speech':
+        ndata = ndata[ndata.category_information == 'Parola']
+    if filter == 'news':
+        ndata = ndata[ndata.category_information == 'Notizia']
+    ndata = ndata[ndata['program'].str.upper() == name]
+    channel = ndata[ndata.program == name].channel.unique()[0]
     daily_minutes_average = round(ndata.minutes_of_information.sum() / ndata.shape[0], 2)
 
     if ndata.shape[0] > 0:
@@ -620,12 +729,17 @@ async def program_stats(name: str, startday: Union[str, None]=Query(default=from
     return {"data": program_data}
 
 @app.get("/channels")
-async def read_channels(startday: Union[str, None] = Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: Union[str, None] = Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
+async def get(startday: Union[str, None] = Query(default=from_day, description="start day of the time window", min_length=10, max_length=10, regex=checkitaliandate), endday: Union[str, None] = Query(default=to_day, description="end day of the time window", min_length=10, max_length=10, regex=checkitaliandate), filter: Union[str, None] = Query(default='both', regex=checkcategoryinformation)):
     """
     returns the list of the italian television **channels** available on a given time window<br/>
     The format of the date is DD/MM/YYYY
     """
-    startday, endday, ndata = getdfinterval(startday, endday, data)
+    ndata = data
+    if filter == 'speech':
+        ndata = ndata[ndata.category_information == 'Parola']
+    if filter == 'news':
+        ndata = ndata[ndata.category_information == 'Notizia']
+    startday, endday, ndata = getdfinterval(startday, endday, ndata)
     senddata_channels = {}
     senddata_channels['from'] = startday
     senddata_channels['to'] = endday
@@ -649,14 +763,19 @@ async def read_channels(startday: Union[str, None] = Query(default=from_day, min
     return {'data': senddata_channels}
 
 @app.get("/channel/{name}")
-async def channel(name: str, startday: Union[str, None]=Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: Union[str, None]=Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
+async def get(name: str = Path(description="name of the italian channel"), startday: Union[str, None] = Query(default=from_day, description="start day of the time window", min_length=10, max_length=10, regex=checkitaliandate), endday: Union[str, None] = Query(default=to_day, description="end day of the time window", min_length=10, max_length=10, regex=checkitaliandate), filter: Union[str, None] = Query(default='both', regex=checkcategoryinformation)):
     """
     returns all the data of a single italian tv **channel** and relative **programs** in a given time window<br/>
     The time unit is the day (format DD/MM/YYYY)  
     """
+    ndata = data
+    if filter == 'speech':
+        ndata = ndata[ndata.category_information == 'Parola']
+    if filter == 'news':
+        ndata = ndata[ndata.category_information == 'Notizia']
     name = name.title()
     channel_data = {}
-    ndata = data[data['channel'].str.title() == name]
+    ndata = ndata[ndata['channel'].str.title() == name]
     programs = list(ndata.program.unique())
     if ndata.shape[0] > 0:
         startday, endday, ndata = getdfinterval(startday, endday, ndata)
@@ -672,10 +791,15 @@ async def channel(name: str, startday: Union[str, None]=Query(default=from_day, 
     return {"data": channel_data}
 
 @app.get("/channel/{name}/stats")
-async def channel_stats(name: str, startday: Union[str, None]=Query(default=from_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'), endday: Union[str, None]=Query(default=to_day, min_length=10, max_length=10, regex='(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))')):
+async def get(name: str = Path(description="name of the italian channel"), startday: Union[str, None] = Query(default=from_day, description="start day of the time window", min_length=10, max_length=10, regex=checkitaliandate), endday: Union[str, None] = Query(default=to_day, description="end day of the time window", min_length=10, max_length=10, regex=checkitaliandate), filter: Union[str, None] = Query(default='both', regex=checkcategoryinformation)):
     name = name.title()
     channel_data = {}
-    ndata = data[data['channel'].str.title() == name]
+    ndata = data
+    if filter == 'speech':
+        ndata = ndata[ndata.category_information == 'Parola']
+    if filter == 'news':
+        ndata = ndata[ndata.category_information == 'Notizia']
+    ndata = ndata[ndata['channel'].str.title() == name]
     daily_minutes_average = round(
         ndata.minutes_of_information.sum() / ndata.shape[0], 2)
 
