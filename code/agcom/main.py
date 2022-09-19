@@ -52,7 +52,7 @@ app = FastAPI(
     docs_url="/", redoc_url=None,
     title="AGCOM - dati elementari di monitoraggio televisivo",
     description=description,
-    version="0.6.1",
+    version="0.7.0",
     contact={
         "name": "napo",
         "url": "https://twitter.com/napo"
@@ -267,6 +267,7 @@ async def get(name_lastname: str = Path(description="name and lastname of the po
     - total minutes of presence
     - average daily minutes
     - total days of presence
+    - days with the record of presence
     - distribution of minutes by topics
     - distribution of minutes by television channel
     - distribution of minutes for television programs
@@ -284,9 +285,10 @@ async def get(name_lastname: str = Path(description="name and lastname of the po
     time_channels = ""
     time_topics = ""
     time_programs = ""
-    days_greater_presence = ""
-    days_less_presence = ""
     daily_minutes_average = ""
+    total_days = ""
+    ddg = ""
+    ddl = ""
     politician = ndata[ndata['name_lastname'].str.title()
                                   == name_lastname]
 
@@ -316,24 +318,67 @@ async def get(name_lastname: str = Path(description="name and lastname of the po
             columns={"minutes_of_information": "time_programs"}, inplace=True)
         time_programs = time_programs.sort_values(by=["time_programs", "program"], ascending=[
                                                   False, False]).to_dict()['time_programs']
-        daysp = politician.groupby(["day"]).sum().reset_index().sort_values(
+        daysp = politician.groupby(["day","category_information"]).sum().reset_index().sort_values(
             'minutes_of_information', ascending=False)
         ddg = []
-        for idx, row in daysp[daysp['minutes_of_information'] == daysp['minutes_of_information'].max()].iterrows():
-            ts = pd.to_datetime(str(row['day']))
-            d = ts.strftime('%d/%m/%Y')
-            rday = {}
-            rday["day"] = d
-            rday['minutes'] = row['minutes_of_information']
-            ddg.append(rday)
         ddl = []
-        for idx, row in daysp[daysp['minutes_of_information'] == daysp['minutes_of_information'].min()].iterrows():
+        daysp_speech = daysp[daysp.category_information == "Parola"]
+        daysp_news = daysp[daysp.category_information == "Notizia"]
+        if (filter == 'both'):
+            for idx, row in daysp[daysp['minutes_of_information'] == daysp['minutes_of_information'].max()].iterrows():
+                ts = pd.to_datetime(str(row['day']))
+                d = ts.strftime('%d/%m/%Y')
+                rday = {}
+                rday["day"] = d
+                rday['minutes'] = row['minutes_of_information']
+                rday['category_information'] = 'total'
+                ddg.append(rday)
+
+        for idx, row in daysp_speech[daysp_speech['minutes_of_information'] == daysp_speech['minutes_of_information'].max()].iterrows():
             ts = pd.to_datetime(str(row['day']))
             d = ts.strftime('%d/%m/%Y')
             rday = {}
             rday["day"] = d
             rday['minutes'] = row['minutes_of_information']
+            rday['category_information'] = 'speech'
+            ddg.append(rday)
+
+        for idx, row in daysp_news[daysp_news['minutes_of_information'] == daysp_news['minutes_of_information'].max()].iterrows():
+            ts = pd.to_datetime(str(row['day']))
+            d = ts.strftime('%d/%m/%Y')
+            rday = {}
+            rday["day"] = d
+            rday['minutes'] = row['minutes_of_information']
+            rday['category_information'] = 'news'
+            ddg.append(rday)
+        if (filter == 'both'):
+                for idx, row in daysp[daysp['minutes_of_information'] == daysp['minutes_of_information'].min()].iterrows():
+                    ts = pd.to_datetime(str(row['day']))
+                    d = ts.strftime('%d/%m/%Y')
+                    rday = {}
+                    rday["day"] = d
+                    rday['minutes'] = row['minutes_of_information']
+                    rday['category_information'] = 'total'
+                    ddl.append(rday)
+
+        for idx, row in daysp_speech[daysp_speech['minutes_of_information'] == daysp_speech['minutes_of_information'].min()].iterrows():
+            ts = pd.to_datetime(str(row['day']))
+            d = ts.strftime('%d/%m/%Y')
+            rday = {}
+            rday["day"] = d
+            rday['minutes'] = row['minutes_of_information']
+            rday['category_information'] = 'speech'
             ddl.append(rday)
+
+        for idx, row in daysp_news[daysp_news['minutes_of_information'] == daysp_news['minutes_of_information'].min()].iterrows():
+            ts = pd.to_datetime(str(row['day']))
+            d = ts.strftime('%d/%m/%Y')
+            rday = {}
+            rday["day"] = d
+            rday['minutes'] = row['minutes_of_information']
+            rday['category_information'] = 'news'
+            ddl.append(rday)
+
     stats = {}
     stats['politician'] = name_lastname
     stats['affiliations'] = affiliations
@@ -484,6 +529,10 @@ async def get(name: str = Path(description="name of the political collective sub
     time_channels = ""
     time_topics = ""
     time_programs = ""
+    daily_minutes_average = ""
+    total_days = ""
+    ddg = ""
+    ddl = ""
     collectivesubject = ndata[ndata['lastname'].str.title(
     ) == name]
 
@@ -505,11 +554,80 @@ async def get(name: str = Path(description="name of the political collective sub
             columns={"minutes_of_information": "time_programs"}, inplace=True)
         time_programs = time_programs.sort_values(by=["time_programs", "program"], ascending=[
                                                   False, False]).to_dict()['time_programs']
+        daily_minutes_average = round(
+            collectivesubject.minutes_of_information.sum() / collectivesubject.shape[0], 2)
+        total_days = len(collectivesubject.day.unique())
+        daysp = collectivesubject.groupby(["day", "category_information"]).sum().reset_index().sort_values(
+            'minutes_of_information', ascending=False)
+        ddg = []
+        ddl = []
+        daysp_speech = daysp[daysp.category_information == "Parola"]
+        daysp_news = daysp[daysp.category_information == "Notizia"]
+        if (filter == 'both'):
+            for idx, row in daysp[daysp['minutes_of_information'] == daysp['minutes_of_information'].max()].iterrows():
+                ts = pd.to_datetime(str(row['day']))
+                d = ts.strftime('%d/%m/%Y')
+                rday = {}
+                rday["day"] = d
+                rday['minutes'] = row['minutes_of_information']
+                rday['category_information'] = 'total'
+                ddg.append(rday)
+
+        for idx, row in daysp_speech[daysp_speech['minutes_of_information'] == daysp_speech['minutes_of_information'].max()].iterrows():
+            ts = pd.to_datetime(str(row['day']))
+            d = ts.strftime('%d/%m/%Y')
+            rday = {}
+            rday["day"] = d
+            rday['minutes'] = row['minutes_of_information']
+            rday['category_information'] = 'speech'
+            ddg.append(rday)
+
+        for idx, row in daysp_news[daysp_news['minutes_of_information'] == daysp_news['minutes_of_information'].max()].iterrows():
+            ts = pd.to_datetime(str(row['day']))
+            d = ts.strftime('%d/%m/%Y')
+            rday = {}
+            rday["day"] = d
+            rday['minutes'] = row['minutes_of_information']
+            rday['category_information'] = 'news'
+            ddg.append(rday)
+        if (filter == 'both'):
+                for idx, row in daysp[daysp['minutes_of_information'] == daysp['minutes_of_information'].min()].iterrows():
+                    ts = pd.to_datetime(str(row['day']))
+                    d = ts.strftime('%d/%m/%Y')
+                    rday = {}
+                    rday["day"] = d
+                    rday['minutes'] = row['minutes_of_information']
+                    rday['category_information'] = 'total'
+                    ddl.append(rday)
+
+        for idx, row in daysp_speech[daysp_speech['minutes_of_information'] == daysp_speech['minutes_of_information'].min()].iterrows():
+            ts = pd.to_datetime(str(row['day']))
+            d = ts.strftime('%d/%m/%Y')
+            rday = {}
+            rday["day"] = d
+            rday['minutes'] = row['minutes_of_information']
+            rday['category_information'] = 'speech'
+            ddl.append(rday)
+
+        for idx, row in daysp_news[daysp_news['minutes_of_information'] == daysp_news['minutes_of_information'].min()].iterrows():
+            ts = pd.to_datetime(str(row['day']))
+            d = ts.strftime('%d/%m/%Y')
+            rday = {}
+            rday["day"] = d
+            rday['minutes'] = row['minutes_of_information']
+            rday['category_information'] = 'news'
+            ddl.append(rday)
+    
     stats = {}
     stats['collectivesubject'] = name
     stats['from'] = startday
     stats['to'] = endday
     stats['presence_minutes'] = presence
+    stats['daily_minutes_average'] = daily_minutes_average
+    stats['total_days'] = total_days
+    stats['days_greater_presence'] = ddg
+    stats['days_less_presence'] = ddl
+    
     stats['time_topics'] = time_topics
     stats['time_channels'] = time_channels
     stats['time_programs'] = time_programs
@@ -526,7 +644,6 @@ async def get(startday: Union[str, None] = Query(default=from_day, description="
         ndata = ndata[ndata.category_information == 'Parola']
     if filter == 'news':
         ndata = ndata[ndata.category_information == 'Notizia']
-    name = name.title()
     startday, endday, ndata = getdfinterval(
         startday, endday, ndata)
     
@@ -605,6 +722,70 @@ async def get(name: str = Path(description="name of the topic"), startday: Union
             ndata.minutes_of_information.sum() / ndata.shape[0], 2)
         topic_data['daily_minutes_average'] = daily_minutes_average
         topic_data['total_days'] = len(ndata.day.unique())
+        
+        daysp = ndata.groupby(["day", "category_information"]).sum().reset_index().sort_values(
+            'minutes_of_information', ascending=False)
+        ddg = []
+        ddl = []
+        daysp_speech = daysp[daysp.category_information == "Parola"]
+        daysp_news = daysp[daysp.category_information == "Notizia"]
+        if (filter == 'both'):
+            for idx, row in daysp[daysp['minutes_of_information'] == daysp['minutes_of_information'].max()].iterrows():
+                ts = pd.to_datetime(str(row['day']))
+                d = ts.strftime('%d/%m/%Y')
+                rday = {}
+                rday["day"] = d
+                rday['minutes'] = row['minutes_of_information']
+                rday['category_information'] = 'total'
+                ddg.append(rday)
+
+        for idx, row in daysp_speech[daysp_speech['minutes_of_information'] == daysp_speech['minutes_of_information'].max()].iterrows():
+            ts = pd.to_datetime(str(row['day']))
+            d = ts.strftime('%d/%m/%Y')
+            rday = {}
+            rday["day"] = d
+            rday['minutes'] = row['minutes_of_information']
+            rday['category_information'] = 'speech'
+            ddg.append(rday)
+
+        for idx, row in daysp_news[daysp_news['minutes_of_information'] == daysp_news['minutes_of_information'].max()].iterrows():
+            ts = pd.to_datetime(str(row['day']))
+            d = ts.strftime('%d/%m/%Y')
+            rday = {}
+            rday["day"] = d
+            rday['minutes'] = row['minutes_of_information']
+            rday['category_information'] = 'news'
+            ddg.append(rday)
+        if (filter == 'both'):
+            for idx, row in daysp[daysp['minutes_of_information'] == daysp['minutes_of_information'].min()].iterrows():
+                ts = pd.to_datetime(str(row['day']))
+                d = ts.strftime('%d/%m/%Y')
+                rday = {}
+                rday["day"] = d
+                rday['minutes'] = row['minutes_of_information']
+                rday['category_information'] = 'total'
+                ddl.append(rday)
+
+        for idx, row in daysp_speech[daysp_speech['minutes_of_information'] == daysp_speech['minutes_of_information'].min()].iterrows():
+            ts = pd.to_datetime(str(row['day']))
+            d = ts.strftime('%d/%m/%Y')
+            rday = {}
+            rday["day"] = d
+            rday['minutes'] = row['minutes_of_information']
+            rday['category_information'] = 'speech'
+            ddl.append(rday)
+
+        for idx, row in daysp_news[daysp_news['minutes_of_information'] == daysp_news['minutes_of_information'].min()].iterrows():
+            ts = pd.to_datetime(str(row['day']))
+            d = ts.strftime('%d/%m/%Y')
+            rday = {}
+            rday["day"] = d
+            rday['minutes'] = row['minutes_of_information']
+            rday['category_information'] = 'news'
+            ddl.append(rday)
+        topic_data['days_greater_presence'] = ddg
+        topic_data['days_less_presence'] = ddl
+
         ndata.category_information = ndata.category_information.apply(
             lambda x: changeParolaNotizia(x))
         tmi = ndata.groupby(by="category_information")[
@@ -631,9 +812,7 @@ async def get(name: str = Path(description="name of the topic"), startday: Union
         if ndata_collective_subjects.shape[0]:
             tms = ndata_collective_subjects.groupby(by="lastname")[
                 'minutes_of_information'].sum().to_frame().sort_values(by="minutes_of_information", ascending=False).T
-            topic_data['collective_subjects_minutes'] = tms.to_dict('records')[
-                0]
-
+            topic_data['collective_subjects_minutes'] = tms.to_dict('records')[0]
     return {"data": topic_data}
 
 @app.get("/programs")
@@ -725,6 +904,71 @@ async def get(name: str = Path(description="name of the italian program"), start
             ndata.minutes_of_information.sum() / ndata.shape[0], 2)
         program_data['daily_minutes_average'] = daily_minutes_average
         program_data['total_days'] = len(ndata.day.unique())
+
+        daysp = ndata.groupby(["day", "category_information"]).sum().reset_index().sort_values(
+            'minutes_of_information', ascending=False)
+        ddg = []
+        ddl = []
+        daysp_speech = daysp[daysp.category_information == "Parola"]
+        daysp_news = daysp[daysp.category_information == "Notizia"]
+        if (filter == 'both'):
+            for idx, row in daysp[daysp['minutes_of_information'] == daysp['minutes_of_information'].max()].iterrows():
+                ts = pd.to_datetime(str(row['day']))
+                d = ts.strftime('%d/%m/%Y')
+                rday = {}
+                rday["day"] = d
+                rday['minutes'] = row['minutes_of_information']
+                rday['category_information'] = 'total'
+                ddg.append(rday)
+
+        for idx, row in daysp_speech[daysp_speech['minutes_of_information'] == daysp_speech['minutes_of_information'].max()].iterrows():
+            ts = pd.to_datetime(str(row['day']))
+            d = ts.strftime('%d/%m/%Y')
+            rday = {}
+            rday["day"] = d
+            rday['minutes'] = row['minutes_of_information']
+            rday['category_information'] = 'speech'
+            ddg.append(rday)
+
+        for idx, row in daysp_news[daysp_news['minutes_of_information'] == daysp_news['minutes_of_information'].max()].iterrows():
+            ts = pd.to_datetime(str(row['day']))
+            d = ts.strftime('%d/%m/%Y')
+            rday = {}
+            rday["day"] = d
+            rday['minutes'] = row['minutes_of_information']
+            rday['category_information'] = 'news'
+            ddg.append(rday)
+        if (filter == 'both'):
+            for idx, row in daysp[daysp['minutes_of_information'] == daysp['minutes_of_information'].min()].iterrows():
+                ts = pd.to_datetime(str(row['day']))
+                d = ts.strftime('%d/%m/%Y')
+                rday = {}
+                rday["day"] = d
+                rday['minutes'] = row['minutes_of_information']
+                rday['category_information'] = 'total'
+                ddl.append(rday)
+
+        for idx, row in daysp_speech[daysp_speech['minutes_of_information'] == daysp_speech['minutes_of_information'].min()].iterrows():
+            ts = pd.to_datetime(str(row['day']))
+            d = ts.strftime('%d/%m/%Y')
+            rday = {}
+            rday["day"] = d
+            rday['minutes'] = row['minutes_of_information']
+            rday['category_information'] = 'speech'
+            ddl.append(rday)
+
+        for idx, row in daysp_news[daysp_news['minutes_of_information'] == daysp_news['minutes_of_information'].min()].iterrows():
+            ts = pd.to_datetime(str(row['day']))
+            d = ts.strftime('%d/%m/%Y')
+            rday = {}
+            rday["day"] = d
+            rday['minutes'] = row['minutes_of_information']
+            rday['category_information'] = 'news'
+            ddl.append(rday)
+        program_data['days_greater_presence'] = ddg
+        program_data['days_less_presence'] = ddl
+
+
         ndata.category_information = ndata.category_information.apply(
             lambda x: changeParolaNotizia(x))
         tmi = ndata.groupby(by="category_information")['minutes_of_information'].sum().to_frame().T
@@ -830,13 +1074,77 @@ async def get(name: str = Path(description="name of the italian channel"), start
         ndata.day = ndata.day.apply(lambda x: x.strftime('%d/%m/%Y'))
         programs = list(ndata.program.unique())
         channel_data['channel'] = name
-        channel_data['programs'] = programs
         channel_data['from'] = startday
         channel_data['to'] = endday
         daily_minutes_average = round(
             ndata.minutes_of_information.sum() / ndata.shape[0], 2)
         channel_data['daily_minutes_average'] = daily_minutes_average
         channel_data['total_days'] = len(ndata.day.unique())
+        
+        daysp = ndata.groupby(["day", "category_information"]).sum().reset_index().sort_values(
+            'minutes_of_information', ascending=False)
+        ddg = []
+        ddl = []
+        daysp_speech = daysp[daysp.category_information == "Parola"]
+        daysp_news = daysp[daysp.category_information == "Notizia"]
+        if (filter == 'both'):
+            for idx, row in daysp[daysp['minutes_of_information'] == daysp['minutes_of_information'].max()].iterrows():
+                ts = pd.to_datetime(str(row['day']))
+                d = ts.strftime('%d/%m/%Y')
+                rday = {}
+                rday["day"] = d
+                rday['minutes'] = row['minutes_of_information']
+                rday['category_information'] = 'total'
+                ddg.append(rday)
+
+        for idx, row in daysp_speech[daysp_speech['minutes_of_information'] == daysp_speech['minutes_of_information'].max()].iterrows():
+            ts = pd.to_datetime(str(row['day']))
+            d = ts.strftime('%d/%m/%Y')
+            rday = {}
+            rday["day"] = d
+            rday['minutes'] = row['minutes_of_information']
+            rday['category_information'] = 'speech'
+            ddg.append(rday)
+
+        for idx, row in daysp_news[daysp_news['minutes_of_information'] == daysp_news['minutes_of_information'].max()].iterrows():
+            ts = pd.to_datetime(str(row['day']))
+            d = ts.strftime('%d/%m/%Y')
+            rday = {}
+            rday["day"] = d
+            rday['minutes'] = row['minutes_of_information']
+            rday['category_information'] = 'news'
+            ddg.append(rday)
+        if (filter == 'both'):
+            for idx, row in daysp[daysp['minutes_of_information'] == daysp['minutes_of_information'].min()].iterrows():
+                ts = pd.to_datetime(str(row['day']))
+                d = ts.strftime('%d/%m/%Y')
+                rday = {}
+                rday["day"] = d
+                rday['minutes'] = row['minutes_of_information']
+                rday['category_information'] = 'total'
+                ddl.append(rday)
+
+        for idx, row in daysp_speech[daysp_speech['minutes_of_information'] == daysp_speech['minutes_of_information'].min()].iterrows():
+            ts = pd.to_datetime(str(row['day']))
+            d = ts.strftime('%d/%m/%Y')
+            rday = {}
+            rday["day"] = d
+            rday['minutes'] = row['minutes_of_information']
+            rday['category_information'] = 'speech'
+            ddl.append(rday)
+
+        for idx, row in daysp_news[daysp_news['minutes_of_information'] == daysp_news['minutes_of_information'].min()].iterrows():
+            ts = pd.to_datetime(str(row['day']))
+            d = ts.strftime('%d/%m/%Y')
+            rday = {}
+            rday["day"] = d
+            rday['minutes'] = row['minutes_of_information']
+            rday['category_information'] = 'news'
+            ddl.append(rday)
+        channel_data['days_greater_presence'] = ddg
+        channel_data['days_less_presence'] = ddl
+        channel_data['programs'] = programs
+
         ndata.category_information = ndata.category_information.apply(
             lambda x: changeParolaNotizia(x))
         tmi = ndata.groupby(by="category_information")[
