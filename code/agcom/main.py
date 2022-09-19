@@ -284,6 +284,8 @@ async def get(name_lastname: str = Path(description="name and lastname of the po
     time_channels = ""
     time_topics = ""
     time_programs = ""
+    days_greater_presence = ""
+    days_less_presence = ""
     politician = ndata[ndata['name_lastname'].str.title()
                                   == name_lastname]
 
@@ -313,7 +315,24 @@ async def get(name_lastname: str = Path(description="name and lastname of the po
             columns={"minutes_of_information": "time_programs"}, inplace=True)
         time_programs = time_programs.sort_values(by=["time_programs", "program"], ascending=[
                                                   False, False]).to_dict()['time_programs']
-
+        daysp = politician.groupby(["day"]).sum().reset_index().sort_values(
+            'minutes_of_information', ascending=False)
+        ddg = []
+        for idx, row in daysp[daysp['minutes_of_information'] == daysp['minutes_of_information'].max()].iterrows():
+            ts = pd.to_datetime(str(row['day']))
+            d = ts.strftime('%d/%m/%Y')
+            rday = {}
+            rday["day"] = d
+            rday['minutes'] = row['minutes_of_information']
+            ddg.append(rday)
+        ddl = []
+        for idx, row in daysp[daysp['minutes_of_information'] == daysp['minutes_of_information'].min()].iterrows():
+            ts = pd.to_datetime(str(row['day']))
+            d = ts.strftime('%d/%m/%Y')
+            rday = {}
+            rday["day"] = d
+            rday['minutes'] = row['minutes_of_information']
+            ddl.append(rday)
     stats = {}
     stats['politician'] = name_lastname
     stats['affiliations'] = affiliations
@@ -322,6 +341,8 @@ async def get(name_lastname: str = Path(description="name and lastname of the po
     stats['presence_minutes'] = presence
     stats['daily_minutes_average'] = daily_minutes_average
     stats['total_days'] = total_days
+    stats['days_greater_presence'] = ddg
+    stats['days_less_presence'] = ddl
     stats['time_topics'] = time_topics
     stats['time_channels'] = time_channels
     stats['time_programs'] = time_programs
