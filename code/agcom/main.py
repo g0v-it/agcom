@@ -52,7 +52,7 @@ app = FastAPI(
     docs_url="/", redoc_url=None,
     title="AGCOM - dati elementari di monitoraggio televisivo",
     description=description,
-    version="0.6.0",
+    version="0.6.1",
     contact={
         "name": "napo",
         "url": "https://twitter.com/napo"
@@ -286,6 +286,7 @@ async def get(name_lastname: str = Path(description="name and lastname of the po
     time_programs = ""
     days_greater_presence = ""
     days_less_presence = ""
+    daily_minutes_average = ""
     politician = ndata[ndata['name_lastname'].str.title()
                                   == name_lastname]
 
