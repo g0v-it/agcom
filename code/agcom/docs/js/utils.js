@@ -3,6 +3,8 @@ $("#politicianlink").click(function() {
     $('#viewdata').hide();
     $("#cercapolitico").show();
     $("#stats").hide();
+    $('#waitingdata').hide();
+    $('#viewdata').hide();
 });
 
 function timeHumanReadable(inminutes) {

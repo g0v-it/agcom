@@ -110,12 +110,44 @@
                 In rappresentanza dei seguenti partiti/movimenti politici/istituzioni
                 <span id="affiliations"></span>
             </div>
+            <div id="waitingdata" class="row">
+                <div class="col-sm">
+                    <span class="loading monkey bigwait"></span>
+                </div>
+                <div class="col-sm">
+                    <span class="loading monkey bigwait"></span>
+                </div>
+                <div class="col-sm">
+                    <span class="loading monkey bigwait"></span>
+                </div>
+                <div class="col-sm">
+                    <span class="loading monkey bigwait"></span>
+                </div>
+                <div class="col-sm">
+                    <span class="loading monkey bigwait"></span>
+                </div>
+                <div class="col-sm">
+                    <span class="loading monkey bigwait"></span>
+                </div>
+                <div class="col-sm">
+                    <span class="loading monkey bigwait"></span>
+                </div>
+                <div class="col-sm">
+                    <span class="loading monkey bigwait"></span>
+                </div>
+                <div class="col-sm">
+                    <span class="loading monkey bigwait"></span>
+                </div>
+            </div>
             <section id="viewdata">
                 <div class="row">
-                    <div id="calendario" style="width:100%;height:100em"></div>
+                    <div id="calendario" style="width:100%;height:50em"></div>
                 </div>
                 <div class="row">
-                    <div id="minutaggio" style="width:100%;height:100em"></div>
+                    <div id="minutaggio" style="width:100%;height:10em"></div>
+                </div>
+                <div class="row">
+                    <div id="argomenti" style="width:100%;height:30em"></div>
                 </div>
             </section>
         </section>
@@ -151,8 +183,14 @@
         });
         window.addEventListener('resize', chartCalendario.resize);
 
+        var chartArgomenti = echarts.init(document.getElementById('argomenti'), null, {
+            locale: 'IT'
+        });
+        window.addEventListener('resize', chartArgomenti.resize);
+
         var optionminutaggio;
         var optioncalendario;
+        var optionargomenti;
         var yearscalendar = {}
         var maxvaluecalendar = 0;
 
@@ -161,6 +199,7 @@
         var cardstats;
         var bagigio;
         window.onload = function() {
+            $('#waitingdata').hide();
             $("#searching").hide();
             $('#viewdata').hide();
             $("#cercapolitico").hide();
@@ -235,12 +274,15 @@
                             $("#stats").show();
                             $('#cercapolitico').hide();
                             optionminutaggio = {
+                                title: {
+                                    text: 'Totale minuti di presenza'
+                                },
                                 tooltip: {
                                     trigger: 'axis',
                                     axisPointer: {
                                         type: 'shadow'
                                     },
-                                    position: 'top',
+                                    position: 'bottom',
                                     formatter: function(p) {
                                         minuti_parlato = p[0].value;
                                         label_parlato = p[0].seriesName;
@@ -293,17 +335,65 @@
                             if (optionminutaggio && typeof optionminutaggio === 'object') {
                                 chartMinutaggio.setOption(optionminutaggio);
                             }
+                            time_topics = cardstats.time_topics;
+                            datatopics = [];
+                            indicatortopics = [];
+                            valuetopics = [];
+                            maxtimetopics = 0
+                            for (let topic in time_topics) {
+                                if (topic != "Politica e attività istituzionali") {
+                                    if (time_topics[topic] > maxtimetopics) {
+                                        maxtimetopics = time_topics[topic];
+                                    }
+                                }
+                            }
+                            for (let topic in time_topics) {
+                                if (topic != "Politica e attività istituzionali") {
+                                    datatopics.push(topic);
+                                    indicator = {
+                                        name: topic,
+                                        max: maxtimetopics //time_topics[topic]
+                                    }
+                                    indicatortopics.push(indicator);
+                                    valuetopics.push(time_topics[topic]);
+                                }
+                            }
+                            optionargomenti = {
+                                title: {
+                                    text: 'Distribuzione argomenti'
+                                },
+                                legend: {
+                                    data: datatopics
+                                },
+                                radar: {
+                                    shape: 'circle',
+                                    indicator: indicatortopics
+                                },
+                                series: [{
+                                    name: 'Argomenti',
+                                    type: 'radar',
+                                    data: [{
+                                        value: valuetopics,
+                                        name: 'Minuti'
+                                    }]
+                                }]
+                            };
+
+                            if (optionargomenti && typeof optionargomenti === 'object') {
+                                chartArgomenti.setOption(optionargomenti);
+                            }
                             var temp_yearscalendar = {}
                             var minyear = 0
                             var maxyear = 0
-
+                            $('#waitingdata').show();
                             $.get('politician/yearsactivity/' + name, function(yearsactivity) {
                                 chartCalendario.clear();
-                                $('#calendario').height('50em');
-                                $('#calendario').width('100%');
                                 maxvaluecalendar = 0;
                                 minyear = yearsactivity.from;
                                 maxyear = yearsactivity.to;
+                                heightchart = (((maxyear - minyear) * 10) + 10).toString() + "em";
+                                $('#calendario').height(heightchart);
+                                $('#calendario').width('100%');
 
                                 function get_calendar_view() {
                                     calendarview = [];
@@ -383,6 +473,7 @@
                                         };
                                         if (optioncalendario && typeof optioncalendario === 'object') {
                                             chartCalendario.setOption(optioncalendario);
+                                            $('#waitingdata').hide();
                                             $('#viewdata').show('slow');
                                         }
                                     });
