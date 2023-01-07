@@ -22,7 +22,7 @@
                     </a>
 
                     <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
-                        <li><a href="#" class="nav-link px-2 link-secondary">Persone</a></li>
+                        <li><a id="politicianlink" href="#" class="nav-link px-2 link-dark">Persone</a></li>
                         <li><a href="#" class="nav-link px-2 link-dark">Soggetti</a></li>
                         <li><a href="#" class="nav-link px-2 link-dark">Canali</a></li>
                         <li><a href="#" class="nav-link px-2 link-dark">Trasmissioni</a></li>
@@ -75,55 +75,63 @@
         </div>
 
         <div id="searching" class="row">
-            <div class="col-sm"></div>
             <div class="col-sm">
-                <br/>
-                <span class="loading monkey"></span>
-                <span class="loading monkey"></span>
-                <span class="loading monkey"></span>
-                <span class="loading monkey"></span>
-                <span class="loading monkey"></span>
-                <span class="loading monkey"></span>
-                <span class="loading monkey"></span>
-                <span class="loading monkey"></span>
-                <span class="loading monkey"></span>
+                <span class="loading monkey bigwait"></span>
             </div>
-            <div class="col-sm"></div>
+            <div class="col-sm">
+                <span class="loading monkey bigwait"></span>
+            </div>
+            <div class="col-sm">
+                <span class="loading monkey bigwait"></span>
+            </div>
+            <div class="col-sm">
+                <span class="loading monkey bigwait"></span>
+            </div>
+            <div class="col-sm">
+                <span class="loading monkey bigwait"></span>
+            </div>
+            <div class="col-sm">
+                <span class="loading monkey bigwait"></span>
+            </div>
+            <div class="col-sm">
+                <span class="loading monkey bigwait"></span>
+            </div>
+            <div class="col-sm">
+                <span class="loading monkey bigwait"></span>
+            </div>
+            <div class="col-sm">
+                <span class="loading monkey bigwait"></span>
+            </div>
         </div>
-        <br/><br/>
-        <div id="stats" class="row">
-            <hr/>
-            <div class="col-2">
+        <section id="stats">
+            <div class="row">
                 <h2 id="nome"></h2>
-                <div class="row">
-                    <span id="affiliations"></span>
-                </div>
-                <div class="row">
-                    dati disponibili<br/> dal <span id="fromcard"></span> al <span id="tocard"></span>
-                </div>
+                <h3>Presenza nei programmi televisivi italiani</h3>
+                In rappresentanza dei seguenti partiti/movimenti politici/istituzioni
+                <span id="affiliations"></span>
             </div>
-            <div class="col-10">
+            <section id="viewdata">
                 <div class="row">
                     <div id="calendario" style="width:100%;height:100em"></div>
                 </div>
                 <div class="row">
                     <div id="minutaggio" style="width:100%;height:100em"></div>
                 </div>
-            </div>
-        </div>
+            </section>
+        </section>
+    </div>
 
+    <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top">
+        <p class="col-md-4 mb-0 text-muted">creato da <a href="https://twitter.com/napo">napo</a></p>
 
-        <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top">
-            <p class="col-md-4 mb-0 text-muted">creato da <a href="https://twitter.com/napo">napo</a></p>
+        <a href="/" class="col-md-4 d-flex align-items-center justify-content-center mb-3 mb-md-0 me-md-auto link-dark text-decoration-none">
+            <svg class="bi me-2" width="40" height="32"><use xlink:href="#bootstrap"/></svg>
+        </a>
 
-            <a href="/" class="col-md-4 d-flex align-items-center justify-content-center mb-3 mb-md-0 me-md-auto link-dark text-decoration-none">
-                <svg class="bi me-2" width="40" height="32"><use xlink:href="#bootstrap"/></svg>
-            </a>
-
-            <ul class="nav col-md-4 justify-content-end">
-                <li class="nav-item">in collaborazione con <a href="https://copernicani.it" class="text-muted">Copernicani</a></li>
-            </ul>
-        </footer>
+        <ul class="nav col-md-4 justify-content-end">
+            <li class="nav-item">in collaborazione con <a href="https://copernicani.it" class="text-muted">Copernicani</a></li>
+        </ul>
+    </footer>
 
     </div>
 
@@ -154,6 +162,7 @@
         var bagigio;
         window.onload = function() {
             $("#searching").hide();
+            $('#viewdata').hide();
             $("#cercapolitico").hide();
             $("#stats").hide();
             $.get('period', function(fromto) {
@@ -204,7 +213,7 @@
             })
             $.get('politicians/list', function(politicianslist) {
                 var availablePoliticians = politicianslist.data.politicians;
-                $("#cercapolitico").show();
+                $("#cercapolitico").show("slow");
                 $("#wait").hide();
                 $("#subject").autocomplete({
                     minLength: 4,
@@ -224,7 +233,7 @@
                             $('#tocard').text(cardstats.to);
                             $("#searching").hide();
                             $("#stats").show();
-
+                            $('#cercapolitico').hide();
                             optionminutaggio = {
                                 tooltip: {
                                     trigger: 'axis',
@@ -290,32 +299,22 @@
 
                             $.get('politician/yearsactivity/' + name, function(yearsactivity) {
                                 chartCalendario.clear();
-                                $('#calendario').height('100em');
-                                $('#calendario').width('100');
+                                $('#calendario').height('50em');
+                                $('#calendario').width('100%');
                                 maxvaluecalendar = 0;
                                 minyear = yearsactivity.from;
                                 maxyear = yearsactivity.to;
 
                                 function get_calendar_view() {
                                     calendarview = [];
-                                    move = 0;
+                                    move = 1;
                                     for (let year = minyear; year <= maxyear; year++) {
-                                        if (move == 0) {
-                                            calendar = {
-                                                top: 120,
-                                                left: 100,
-                                                right: 100,
-                                                range: year.toString(),
-                                                cellSize: ['auto', 10],
-                                            }
-                                        } else {
-                                            calendar = {
-                                                top: 120 * (move + 1),
-                                                left: 100,
-                                                right: 100,
-                                                range: year.toString(),
-                                                cellSize: ['auto', 10],
-                                            }
+                                        calendar = {
+                                            top: 120 * move,
+                                            left: 100,
+                                            right: 100,
+                                            range: year.toString(),
+                                            cellSize: ['auto', 10],
                                         }
                                         calendarview.push(calendar);
                                         move += 1;
@@ -381,20 +380,10 @@
                                             },
                                             calendar: get_calendar_view(),
                                             series: get_calendar_series(),
-                                            /*
-                                            pieces: [{
-                                                min: 0,
-                                                max: 0.5,
-                                                color: 'white'
-                                            }, {
-                                                min: 0.5,
-                                                max: 1,
-                                                color: 'green'
-                                            }, ],
-                                            */
                                         };
                                         if (optioncalendario && typeof optioncalendario === 'object') {
                                             chartCalendario.setOption(optioncalendario);
+                                            $('#viewdata').show('slow');
                                         }
                                     });
                                     yearscalendar = temp_yearscalendar;

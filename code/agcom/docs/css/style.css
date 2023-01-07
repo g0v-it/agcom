@@ -1,5 +1,9 @@
 body {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: Poiret One, Arial, Helvetica, sans-serif;
+}
+
+.bigwait {
+    font-size: 5em;
 }
 
 table {

@@ -1,3 +1,10 @@
+$("#politicianlink").click(function() {
+    $("#searching").hide();
+    $('#viewdata').hide();
+    $("#cercapolitico").show();
+    $("#stats").hide();
+});
+
 function timeHumanReadable(inminutes) {
     var days = Math.floor(inminutes / 1440);
     remainingMinutes = inminutes % 1440;
