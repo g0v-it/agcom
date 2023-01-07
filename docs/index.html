@@ -1,3 +1,64 @@
-<a href="data_report.html">report</a>
-<br/>
-<a href="volume.html">volume</a>
+<!doctype html>
+<html lang="it">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AGCOM - dati elementari di monitoraggio televisivo</title>
+    <link rel="shortcut icon" href="//api.jquery.com/jquery-wp-content/themes/api.jquery.com/i/favicon.ico">
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
+    <script>
+        $.ajax({
+            dataType: "json",
+            url: url,
+            data: data,
+            success: success
+        });
+    </script>
+    <script>
+        $(function() {
+            var availableTags = [
+                "ActionScript",
+                "AppleScript",
+                "Asp",
+                "BASIC",
+                "C",
+                "C++",
+                "Clojure",
+                "COBOL",
+                "ColdFusion",
+                "Erlang",
+                "Fortran",
+                "Groovy",
+                "Haskell",
+                "Java",
+                "JavaScript",
+                "Lisp",
+                "Perl",
+                "PHP",
+                "Python",
+                "Ruby",
+                "Scala",
+                "Scheme"
+            ];
+            $("#subject").autocomplete({
+                source: availableTags
+            });
+        });
+    </script>
+</head>
+
+<body>
+
+    <div class="ui-widget">
+        <label for="subject">Seleziona un soggetto politico:<br/></label>
+        <input id="subject">
+    </div>
+
+
+</body>
+
+</html>

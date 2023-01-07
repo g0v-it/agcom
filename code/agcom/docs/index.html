@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AGCOM - dati elementari di monitoraggio televisivo</title>
+    <link rel="stylesheet" href="css/spinners.css">
+    <link rel="shortcut icon" href="//api.jquery.com/jquery-wp-content/themes/api.jquery.com/i/favicon.ico">
+    <link rel="stylesheet" href="css/jquery-ui.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <header class="p-3 mb-3 border-bottom">
+            <div class="container">
+                <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
+                    <a href="/" class="d-flex align-items-center mb-2 mb-lg-0 text-dark text-decoration-none">
+                        <svg class="bi me-2" width="40" height="32" role="img" aria-label="Bootstrap"><use xlink:href="#bootstrap"/></svg>
+                    </a>
+
+                    <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
+                        <li><a href="#" class="nav-link px-2 link-secondary">Persone</a></li>
+                        <li><a href="#" class="nav-link px-2 link-dark">Soggetti</a></li>
+                        <li><a href="#" class="nav-link px-2 link-dark">Canali</a></li>
+                        <li><a href="#" class="nav-link px-2 link-dark">Trasmissioni</a></li>
+                    </ul>
+                </div>
+            </div>
+        </header>
+
+        <div id="wait" class="row">
+            <div class="col-sm">
+            </div>
+            <div class="col-sm">
+                <span class="loading dots"></span>
+                <span class="loading dots2"></span>
+                <span class="loading dots"></span>
+                <span class="loading dots2"></span>
+                <span class="loading dots"></span>
+                <span class="loading dots2"></span>
+                <span class="loading dots"></span>
+                <span class="loading dots2"></span>
+                <span class="loading dots"></span>
+                <span class="loading dots2"></span>
+                <span class="loading dots"></span>
+                <span class="loading dots2"></span>
+                <span class="loading dots"></span>
+            </div>
+            <div class="col-sm">
+            </div>
+        </div>
+        <div id="cercapolitico" class="row">
+            <div class="col-sm"></div>
+            <div class="col-sm">
+                <h3>Inserire un nome</h3>
+                <div class="ui-widget">
+                    <input size="30" id="subject">
+                </div>
+                <div class="row">
+                    <div class="col-sm">
+                        <br/> periodo in cui investigare i dati
+                        <Br/>
+                        <div class="row">
+                            <div class="col-sm">
+                                dal <input type="text" size="6" id="from" name="from"> al <input type="text" size="6" id="to" name="to">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm"></div>
+        </div>
+
+        <div id="searching" class="row">
+            <div class="col-sm"></div>
+            <div class="col-sm">
+                <br/>
+                <span class="loading monkey"></span>
+                <span class="loading monkey"></span>
+                <span class="loading monkey"></span>
+                <span class="loading monkey"></span>
+                <span class="loading monkey"></span>
+                <span class="loading monkey"></span>
+                <span class="loading monkey"></span>
+                <span class="loading monkey"></span>
+                <span class="loading monkey"></span>
+            </div>
+            <div class="col-sm"></div>
+        </div>
+        <br/><br/>
+        <div id="stats" class="row">
+            <hr/>
+            <div class="col-2">
+                <h2 id="nome"></h2>
+                <div class="row">
+                    <span id="affiliations"></span>
+                </div>
+                <div class="row">
+                    dati disponibili<br/> dal <span id="fromcard"></span> al <span id="tocard"></span>
+                </div>
+            </div>
+            <div class="col-10">
+                <div class="row">
+                    <div id="calendario" style="width:100%;height:100em"></div>
+                </div>
+                <div class="row">
+                    <div id="minutaggio" style="width:100%;height:100em"></div>
+                </div>
+            </div>
+        </div>
+
+
+        <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top">
+            <p class="col-md-4 mb-0 text-muted">creato da <a href="https://twitter.com/napo">napo</a></p>
+
+            <a href="/" class="col-md-4 d-flex align-items-center justify-content-center mb-3 mb-md-0 me-md-auto link-dark text-decoration-none">
+                <svg class="bi me-2" width="40" height="32"><use xlink:href="#bootstrap"/></svg>
+            </a>
+
+            <ul class="nav col-md-4 justify-content-end">
+                <li class="nav-item">in collaborazione con <a href="https://copernicani.it" class="text-muted">Copernicani</a></li>
+            </ul>
+        </footer>
+
+    </div>
+
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script src="js/jquery-3.6.0.js"></script>
+    <script src="js/jquery-ui.js"></script>
+    <script src="js/echarts.min.js"></script>
+    <script src="js/utils.js"></script>
+    <script>
+        var chartMinutaggio = echarts.init(document.getElementById('minutaggio'), null, {
+            locale: 'IT'
+        });
+        window.addEventListener('resize', chartMinutaggio.resize);
+
+        var chartCalendario = echarts.init(document.getElementById('calendario'), null, {
+            locale: 'IT'
+        });
+        window.addEventListener('resize', chartCalendario.resize);
+
+        var optionminutaggio;
+        var optioncalendario;
+        var yearscalendar = {}
+        var maxvaluecalendar = 0;
+
+        var datefrom;
+        var dateto;
+        var cardstats;
+        var bagigio;
+        window.onload = function() {
+            $("#searching").hide();
+            $("#cercapolitico").hide();
+            $("#stats").hide();
+            $.get('period', function(fromto) {
+                datefrom = fromto.period.from;
+                dateto = fromto.period.to;
+                $("#from").val(datefrom);
+                $("#to").val(dateto);
+                $(function() {
+                    var dateFormat = "dd/mm/yyyy",
+                        from = $("#from")
+                        .datepicker({
+                            defaultDate: datefrom,
+                            changeMonth: true,
+                            changeYear: true,
+                            yearRange: datefrom.split("/")[2] + ":" + dateto.split("/")[2],
+                            numberOfMonths: 1,
+                            minDate: datefrom,
+                            maxDate: dateto
+
+                        })
+                        .on("change", function() {
+                            to.datepicker("option", "minDate", getDate(this));
+                        }),
+                        to = $("#to").datepicker({
+                            defaultDate: dateto,
+                            changeMonth: true,
+                            changeYear: true,
+                            yearRange: datefrom.split("/")[2] + ":" + dateto.split("/")[2],
+                            numberOfMonths: 1,
+                            minDate: datefrom,
+                            maxDate: dateto
+                        })
+                        .on("change", function() {
+                            from.datepicker("option", "maxDate", getDate(this));
+                        });
+
+                    function getDate(element) {
+                        var date;
+                        try {
+                            date = $.datepicker.parseDate(dateFormat, element.value);
+                        } catch (error) {
+                            date = null;
+                        }
+
+                        return date;
+                    }
+                });
+            })
+            $.get('politicians/list', function(politicianslist) {
+                var availablePoliticians = politicianslist.data.politicians;
+                $("#cercapolitico").show();
+                $("#wait").hide();
+                $("#subject").autocomplete({
+                    minLength: 4,
+                    delay: 0,
+                    source: availablePoliticians,
+                    select: function(event, ui) {
+                        $("#searching").show();
+                        name = ui.item.value;
+                        $.get('/politician/' + name + '/stats', function(politicianstat) {
+                            cardstats = politicianstat.data;
+                            affiliations = "<ul>"
+                            cardstats.affiliations.forEach(element => affiliations += "<li>" + element + "</li>");
+                            affiliations += "</ul>"
+                            $('#nome').text(cardstats.politician);
+                            $('#affiliations').html(affiliations);
+                            $('#fromcard').text(cardstats.from);
+                            $('#tocard').text(cardstats.to);
+                            $("#searching").hide();
+                            $("#stats").show();
+
+                            optionminutaggio = {
+                                tooltip: {
+                                    trigger: 'axis',
+                                    axisPointer: {
+                                        type: 'shadow'
+                                    },
+                                    position: 'top',
+                                    formatter: function(p) {
+                                        minuti_parlato = p[0].value;
+                                        label_parlato = p[0].seriesName;
+                                        minuti_notizia = p[1].value;
+                                        label_notizia = p[1].seriesName;
+                                        format = "<strong>" + label_parlato + "</strong><br/>" + timeHumanReadable(minuti_parlato) + "<br/>";
+                                        format += "<strong>" + label_notizia + "</strong><br/>" + timeHumanReadable(minuti_notizia);
+                                        return format;
+                                    }
+                                },
+                                legend: {},
+                                grid: {
+                                    left: '3%',
+                                    right: '4%',
+                                    bottom: '3%',
+                                    containLabel: true
+                                },
+                                xAxis: {
+                                    type: 'value'
+                                },
+                                yAxis: {
+                                    type: 'category',
+                                    data: ['totale interventi']
+                                },
+                                series: [{
+                                    name: 'parlato',
+                                    type: 'bar',
+                                    stack: 'total',
+                                    label: {
+                                        show: true
+                                    },
+                                    emphasis: {
+                                        focus: 'series'
+                                    },
+                                    data: [cardstats.presence_minutes.speech]
+                                }, {
+                                    name: 'notizie',
+                                    type: 'bar',
+                                    stack: 'total',
+                                    label: {
+                                        show: true
+                                    },
+                                    emphasis: {
+                                        focus: 'series'
+                                    },
+                                    data: [cardstats.presence_minutes.news]
+                                }]
+                            };
+
+                            if (optionminutaggio && typeof optionminutaggio === 'object') {
+                                chartMinutaggio.setOption(optionminutaggio);
+                            }
+                            var temp_yearscalendar = {}
+                            var minyear = 0
+                            var maxyear = 0
+
+                            $.get('politician/yearsactivity/' + name, function(yearsactivity) {
+                                chartCalendario.clear();
+                                $('#calendario').height('100em');
+                                $('#calendario').width('100');
+                                maxvaluecalendar = 0;
+                                minyear = yearsactivity.from;
+                                maxyear = yearsactivity.to;
+
+                                function get_calendar_view() {
+                                    calendarview = [];
+                                    move = 0;
+                                    for (let year = minyear; year <= maxyear; year++) {
+                                        if (move == 0) {
+                                            calendar = {
+                                                top: 120,
+                                                left: 100,
+                                                right: 100,
+                                                range: year.toString(),
+                                                cellSize: ['auto', 10],
+                                            }
+                                        } else {
+                                            calendar = {
+                                                top: 120 * (move + 1),
+                                                left: 100,
+                                                right: 100,
+                                                range: year.toString(),
+                                                cellSize: ['auto', 10],
+                                            }
+                                        }
+                                        calendarview.push(calendar);
+                                        move += 1;
+                                    }
+                                    return (calendarview);
+                                }
+
+                                function get_calendar_series() {
+                                    series = []
+                                    i = 0
+                                    for (let year = minyear; year <= maxyear; year++) {
+                                        calendar = {
+                                            type: 'heatmap',
+                                            coordinateSystem: 'calendar',
+                                            calendarIndex: i,
+                                            data: get_data4calendar(year)
+                                        }
+                                        series.push(calendar)
+                                        i++;
+                                    }
+                                    return (series)
+                                }
+                                for (let year = minyear; year <= maxyear; year++) {
+                                    $.get('/politician/calendar/' + name + '?year=' + year, function(calendaryeardata) {
+                                        var ydatacalendar = []
+                                        const start = new Date(year, 0, 1);
+                                        const end = new Date(year + 1, 0, 1);
+                                        for (let current = start; current < end; current.setDate(current.getDate() + 1)) {
+                                            time = current.getTime();
+                                            italiandate = echarts.time.format(time, '{dd}/{MM}/{yyyy}', false)
+                                            ydatacalendar.push([
+                                                echarts.time.format(time, '{yyyy}-{MM}-{dd}', false), parseFloat(calendaryeardata[italiandate])
+                                            ]);
+                                            v = parseFloat(calendaryeardata[italiandate]);
+                                            if (v > maxvaluecalendar) {
+                                                maxvaluecalendar = v;
+                                            }
+                                        }
+                                        temp_yearscalendar[year.toString()] = ydatacalendar;
+                                        optioncalendario = {
+                                            title: {
+                                                top: 0,
+                                                left: 'center',
+                                                text: 'Giorni in cui ha fatto/dato notizia'
+                                            },
+                                            tooltip: {
+                                                position: 'top',
+                                                formatter: function(p) {
+                                                    const format = '<strong>' + echarts.time.format(p.data[0], '{dd}-{MM}-{yyyy}', false) + '</strong>';
+                                                    return format + '<br/>interventi per ' + (p.data[1]) + ' minuti<br/>' + timeHumanReadable(p.data[1]);
+                                                }
+                                            },
+                                            visualMap: {
+                                                min: 1,
+                                                max: maxvaluecalendar,
+                                                inRange: {
+                                                    color: ['#ffffff', '#fefaca', '#f0f4c0', '#a7d48c', '#46aa47', '#008b15']
+                                                },
+                                                calculable: true,
+                                                orient: 'horizontal',
+                                                left: 'center',
+                                                top: 25
+                                            },
+                                            calendar: get_calendar_view(),
+                                            series: get_calendar_series(),
+                                            /*
+                                            pieces: [{
+                                                min: 0,
+                                                max: 0.5,
+                                                color: 'white'
+                                            }, {
+                                                min: 0.5,
+                                                max: 1,
+                                                color: 'green'
+                                            }, ],
+                                            */
+                                        };
+                                        if (optioncalendario && typeof optioncalendario === 'object') {
+                                            chartCalendario.setOption(optioncalendario);
+                                        }
+                                    });
+                                    yearscalendar = temp_yearscalendar;
+                                }
+                            });
+                        });
+                    }
+                });
+            });
+        };
+    </script>
+</body>
+
+</html>

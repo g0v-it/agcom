@@ -1,3 +1,4 @@
 fastapi==0.81.0
 fastparquet==0.8.1
 pandas==1.4.2
+pytz==2022.1

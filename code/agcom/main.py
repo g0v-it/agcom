@@ -1,8 +1,12 @@
 from fastapi import FastAPI, Path, Query
+from starlette.responses import FileResponse 
+from fastapi.staticfiles import StaticFiles
 import pandas as pd
 import os
 from typing import Union
 from datetime import datetime
+import pytz
+import calendar
 pd.options.mode.chained_assignment = None  # default='warn'
 data_file = "dati_presenze_politici.parquet"
 data_file_url = "https://github.com/g0v-it/agcom/raw/main/data/"
@@ -16,8 +20,19 @@ else:
 
 checkitaliandate = '(?:(?:(?:0[1-9]|1\d|2[0-8])\/(?:0[1-9]|1[0-2])|(?:29|30)\/(?:0[13-9]|1[0-2])|31\/(?:0[13578]|1[02]))\/[1-9]\d{3}|29\/02(?:\/[1-9]\d(?:0[48]|[2468][048]|[13579][26])|(?:[2468][048]|[13579][26])00))'
 checkcategoryinformation = '^(speech|both|news)$'
+checktimestamp = '^\d{10}$'
+checktimestamp = '^[0-9]*$'
 from_day = data.DATA.min().strftime('%d/%m/%Y')
 to_day = data.DATA.max().strftime('%d/%m/%Y')
+minyear = int(from_day.split("/")[2])
+maxyear = int(to_day.split("/")[2])+1
+ayears = range(minyear,maxyear)
+limityears = "^("
+for y in ayears:
+    limityears += str(y) + "|"
+limityears= limityears.rstrip("|")
+limityears += ")$" 
+checkyear = limityears 
 
 data.rename(columns={'CANALE': 'channel', 'PROGRAMMA': 'program', 'DATA':'day', 
                      'COGNOME':'lastname','NOME':'name',
@@ -49,10 +64,10 @@ A project of [Copernicani Association](https://copernicani.it) and [napo](https:
 """ % (from_day, to_day)
 
 app = FastAPI(
-    docs_url="/", redoc_url=None,
+    #docs_url="/", redoc_url=None,
     title="AGCOM - dati elementari di monitoraggio televisivo",
     description=description,
-    version="0.7.0",
+    version="0.8.0",
     contact={
         "name": "napo",
         "url": "https://twitter.com/napo"
@@ -63,6 +78,9 @@ app = FastAPI(
     },
 )
 
+app.mount("/css", StaticFiles(directory="docs" +os.sep + "css"), name="css")
+app.mount("/js", StaticFiles(directory="docs" +os.sep + "js"), name="js")
+app.mount("/images", StaticFiles(directory="docs" +os.sep + "images"), name="images")
 
 data_collective_subjects = data[data.name == "Soggetto Collettivo"]
 data_politicians = data[data.name != "Soggettivo Collettivo"]
@@ -75,6 +93,15 @@ politicians_columns = data_politicians.columns
 exclude_politicians_columns = ['name', 'lastname', 'name_lastname']
 selected_politicians_columns = list(
     set(politicians_columns).difference(set(exclude_politicians_columns)))
+
+def get_dates_for_year(year):
+    dates = []
+    for month in range(1, 13):
+        for day in calendar.Calendar().itermonthdays(year, month):
+            if day != 0:
+                date = f"{day:02d}/{month:02d}/{year}"
+                dates.append(date)
+    return dates
 
 def getdfinterval(startday,endday, df):
     if (startday == from_day):
@@ -136,6 +163,9 @@ def dfpivottable(df, indexvalue, columnsvalue, aggvalues="minutes_of_information
     rdata['total'] = rdata['news'] + rdata['speech']
     return(rdata)
 
+@app.get("/")
+async def read_index():
+    return FileResponse('docs' + os.sep + 'index.html')
 
 @app.get("/status")
 async def get():
@@ -394,6 +424,55 @@ async def get(name_lastname: str = Path(description="name and lastname of the po
     stats['time_programs'] = time_programs
     return {"data": stats}
 
+@app.get("/politician/yearsactivity/{name_lastname}")
+async def get(name_lastname: str = Path(description="name and lastname of the politician")):
+    """
+    returns the years a politician has been on television
+    """
+    ndata = data_politicians
+    name_lastname = name_lastname.title()
+    answer_data = {}
+    politician = ndata[ndata['name_lastname'].str.title(
+    ) == name_lastname]
+    if politician.shape[0] > 0:
+        politician.day = politician.day.apply(lambda x: x.strftime('%d/%m/%Y'))
+        politician['year'] = politician.day.apply(lambda x: x.split("/")[2])
+        years = [int(x) for x in list(politician['year'].unique())]
+        answer_data['from'] = min(years)
+        answer_data['to'] = max(years)
+    return(answer_data)
+
+@app.get("/politician/calendar/{name_lastname}")
+async def get(name_lastname: str = Path(description="name and lastname of the politician"), 
+              year: Union[str, None] = Query(description="year",regex=checkyear)):
+    """
+    returns the minutes of presence of a single politician day by day in timestamp format in a specific year
+    """
+    ndata = data_politicians
+    name_lastname = name_lastname.title()
+    answer_data = {}
+    politician = ndata[ndata['name_lastname'].str.title(
+    ) == name_lastname]
+    if politician.shape[0] > 0:
+        daysyear = get_dates_for_year(int(year))
+        politician.day = politician.day.apply(lambda x: x.strftime('%d/%m/%Y'))
+        activitydays = politician[politician.day.isin(daysyear)]
+        df_activitydays = activitydays.groupby("day").sum().reset_index()
+        calendaryear = pd.DataFrame(daysyear).rename(columns={0:'day'})
+        calendaryear['minutes_of_information']= 0
+        calendaryear_withoutdays = pd.DataFrame(calendaryear[~calendaryear.day.isin(df_activitydays.day)])
+        calendar_data = pd.concat([df_activitydays,calendaryear_withoutdays],ignore_index=True)
+        def totimestamprome(date_string):
+            date_format = "%d/%m/%Y"
+            date_object = datetime.strptime(date_string, date_format)
+            rome_timezone = pytz.timezone("Europe/Rome")
+            rtimestamp = date_object.astimezone(rome_timezone).timestamp() * 1000
+            rtimestamp = str(rtimestamp).replace(".0","")
+            return(rtimestamp)
+        calendar_data['timestamp'] = calendar_data.day.apply(lambda x: totimestamprome(x))
+        for idx, row in calendar_data.iterrows():
+            answer_data[str(row['day'])] = str(row['minutes_of_information']).replace(".0","")
+    return(answer_data)
 
 @app.get("/affiliations")
 async def get(startday: Union[str, None] = Query(default=from_day, description="start day of the time window", min_length=10, max_length=10, regex=checkitaliandate), 
