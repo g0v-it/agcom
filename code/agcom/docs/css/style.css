@@ -1,5 +1,10 @@
+@font-face {
+    font-family: "Poiret One";
+    src: url('fonts/PoiretOne-Regular.ttf') format('truetype');
+}
+
 body {
-    font-family: Poiret One, Arial, Helvetica, sans-serif;
+    font-family: "Poiret One", Arial, Helvetica, sans-serif;
 }
 
 .bigwait {
