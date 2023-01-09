@@ -81,6 +81,7 @@ app = FastAPI(
 app.mount("/css", StaticFiles(directory="docs" +os.sep + "css"), name="css")
 app.mount("/js", StaticFiles(directory="docs" +os.sep + "js"), name="js")
 app.mount("/images", StaticFiles(directory="docs" +os.sep + "images"), name="images")
+app.mount("/images", StaticFiles(directory="docs" +os.sep + "fonts"), name="fonts")
 
 data_collective_subjects = data[data.name == "Soggetto Collettivo"]
 data_politicians = data[data.name != "Soggettivo Collettivo"]
