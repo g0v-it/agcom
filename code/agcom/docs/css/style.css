@@ -1,12 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Alike&family=Alike+Angular&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap');
 @font-face {
     font-family: "Poiret One";
     src: url('fonts/PoiretOne-Regular.ttf') format('truetype');
 }
 
 body {
-    font-family: "Poiret One", Courier, Arial, Helvetica, sans-serif;
+    font-family: "Poiret One", Baskerville, Courier, Arial, Helvetica, sans-serif;
 }
 
+font-family: 'Alike',
+serif;
+font-family: 'Alike Angular',
+serif;
+font-family: 'DM Sans',
+sans-serif;
 .bigwait {
     font-size: 5em;
 }
